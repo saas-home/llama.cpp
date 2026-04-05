@@ -1098,6 +1098,12 @@ static common_chat_params common_chat_params_init_gemma4(const common_chat_templ
     auto include_grammar     = has_response_format || (has_tools && inputs.tool_choice != COMMON_CHAT_TOOL_CHOICE_NONE);
     auto extract_reasoning   = inputs.reasoning_format != COMMON_REASONING_FORMAT_NONE;
 
+    // Set thinking tags for reasoning budget sampler
+    if (inputs.enable_thinking) {
+        data.thinking_start_tag = "<|channel>thought\n";
+        data.thinking_end_tag   = "<channel|>";
+    }
+
     auto parser = build_chat_peg_parser([&](common_chat_peg_builder & p) {
         auto start = p.rule("start", p.prefix(inputs.generation_prompt, "<|channel>"));
 

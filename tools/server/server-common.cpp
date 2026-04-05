@@ -1019,6 +1019,26 @@ json oaicompat_chat_params_parse(
         inputs.reasoning_format = common_reasoning_format_from_name(body.at("reasoning_format").get<std::string>());
     }
     inputs.enable_thinking       = opt.enable_thinking;
+    // Enable thinking automatically if thinking_budget_tokens is specified in the request
+    if (body.contains("thinking_budget_tokens")) {
+        inputs.enable_thinking = true;
+        // Ensure reasoning_format is not NONE when thinking budget is specified
+        if (inputs.reasoning_format == COMMON_REASONING_FORMAT_NONE) {
+            inputs.reasoning_format = COMMON_REASONING_FORMAT_DEEPSEEK;
+        }
+    }
+    // Also enable thinking if Anthropic-style thinking object is provided
+    if (body.contains("thinking")) {
+        json thinking = json_value(body, "thinking", json::object());
+        std::string thinking_type = json_value(thinking, "type", std::string());
+        if (thinking_type == "enabled") {
+            inputs.enable_thinking = true;
+            // Ensure reasoning_format is not NONE when thinking is enabled
+            if (inputs.reasoning_format == COMMON_REASONING_FORMAT_NONE) {
+                inputs.reasoning_format = COMMON_REASONING_FORMAT_DEEPSEEK;
+            }
+        }
+    }
     if (!inputs.tools.empty() && inputs.tool_choice != COMMON_CHAT_TOOL_CHOICE_NONE) {
         if (body.contains("grammar")) {
             throw std::invalid_argument("Cannot use custom grammar constraints with tools.");
@@ -1070,6 +1090,9 @@ json oaicompat_chat_params_parse(
     // Apply chat template to the list of messages
     auto chat_params = common_chat_templates_apply(opt.tmpls.get(), inputs);
 
+    SRV_INF("chat_params after template: thinking_start_tag_size=%zu, thinking_end_tag_size=%zu, enable_thinking=%d, reasoning_format=%d",
+        chat_params.thinking_start_tag.size(), chat_params.thinking_end_tag.size(), inputs.enable_thinking, (int)inputs.reasoning_format);
+
     /* Append assistant prefilled message */
     if (prefill_assistant_message) {
         if (!last_message.content_parts.empty()) {
@@ -1115,6 +1138,11 @@ json oaicompat_chat_params_parse(
             llama_params["reasoning_budget_start_tag"] = chat_params.thinking_start_tag;
             llama_params["reasoning_budget_end_tag"] = chat_params.thinking_end_tag;
             llama_params["reasoning_budget_message"] = opt.reasoning_budget_message;
+
+            SRV_INF("reasoning_budget: tokens=%d, start_tag_size=%zu, end_tag_size=%zu",
+                reasoning_budget, chat_params.thinking_start_tag.size(), chat_params.thinking_end_tag.size());
+        } else {
+            SRV_WRN("%s", "reasoning_budget: thinking_end_tag is empty, budget not applied");
         }
     }
 
