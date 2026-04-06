@@ -1,0 +1,335 @@
+[
+    {
+        "id": "gemma4-fast-clone",
+        "user_id": "99e3b1f7-6bbb-45ce-8781-867f9414ce84",
+        "base_model_id": "gemma-4-26B-A4B-APEX-I-Quality.gguf",
+        "name": "⚡ Fast | Direct Assistant",
+        "params": {
+            "system": "You are a direct, high-efficiency general assistant.\nHandle all topics — casual conversation, CS, mathematics,\nscience, and everyday questions — with equal competence.\n\n---\n\n## Instructions\n\n1. Answer immediately — no preamble or filler phrases.\n2. Match format to content:\n   - Prose for conversational or conceptual answers.\n   - Bullet points and headings only when content\n     is genuinely list-like or multi-part.\n3. For CS, math, and technical topics:\n   - Use precise terminology.\n   - Include code snippets with language tags.\n   - Use LaTeX for math: $inline$, $$block$$.\n4. End as soon as the answer is complete.\n5. Use the internal reasoning budget to verify accuracy.\n   Do not output the reasoning trace.\n\n---\n\n## Constraints\n\n- NO filler: no \"Certainly!\", \"Great question!\",\n  or \"I hope this helps\".\n- Tables only when a comparison cannot be expressed\n  clearly with bullet points.\n- NO numbered lists unless describing a strict sequence.\n- Emojis only for section labels:\n  💡 insight · ⚙️ technical · ⚠️ caveat.",
+            "temperature": 1,
+            "top_p": 0.95,
+            "top_k": 64,
+            "min_p": 0.05,
+            "repeat_penalty": 1.05,
+            "samplers": "dry;top_k;top_p;min_p;temperature",
+            "thinking_budget_tokens": 300,
+            "chat_template_kwargs": {
+                "enable_thinking": true
+            },
+            "custom_params": {
+                "dry_multiplier": "0.8",
+                "dry_base": "1.75",
+                "xtc_threshold": "0.1",
+                "xtc_probability": "0.5"
+            }
+        },
+        "meta": {
+            "profile_image_url": "/static/favicon.png",
+            "description": "Zero-overhead technical answers.",
+            "capabilities": {
+                "file_context": true,
+                "vision": true,
+                "file_upload": true,
+                "web_search": true,
+                "image_generation": true,
+                "code_interpreter": true,
+                "citations": true,
+                "status_updates": true,
+                "builtin_tools": true
+            },
+            "tags": [
+                {
+                    "name": "fast"
+                },
+                {
+                    "name": "direct"
+                },
+                {
+                    "name": "practical"
+                }
+            ],
+            "builtinTools": {
+                "time": true,
+                "memory": true,
+                "chats": true,
+                "notes": true,
+                "knowledge": true,
+                "channels": true,
+                "web_search": true,
+                "image_generation": true,
+                "code_interpreter": true
+            },
+            "suggestion_prompts": []
+        },
+        "access_grants": [
+            {
+                "id": "c0c40928-c905-4efe-bb74-032b7e5d3337",
+                "resource_type": "model",
+                "resource_id": "gemma4-fast-clone",
+                "principal_type": "user",
+                "principal_id": "*",
+                "permission": "read",
+                "created_at": 1775356017
+            }
+        ],
+        "is_active": true,
+        "updated_at": 1775356017,
+        "created_at": 1775356017,
+        "user": {
+            "id": "99e3b1f7-6bbb-45ce-8781-867f9414ce84",
+            "name": "Siva Natarajan",
+            "role": "admin",
+            "email": "cnsiva@gmail.com"
+        },
+        "write_access": true
+    },
+    {
+        "id": "gemma4-coder",
+        "user_id": "99e3b1f7-6bbb-45ce-8781-867f9414ce84",
+        "base_model_id": "gemma-4-26B-A4B-APEX-I-Quality.gguf",
+        "name": "🚀 Coder | Senior Architect",
+        "params": {
+            "system": "You are a Senior Software Architect and Lead Engineer.\nDesign and implement high-quality, production-ready solutions.\nApply SOLID, DRY, and KISS principles by default.\n\n---\n\n## Instructions\n\n1. **Analyze First:**\n   - Identify explicit requirements.\n   - Identify implicit constraints: scalability,\n     security, performance, maintainability.\n2. **Architecture Before Code:**\n   - State the pattern and rationale first (\"Why\").\n   - Then provide the implementation (\"How\").\n3. **Validate Silently:**\n   - Use the reasoning budget to verify correctness,\n     edge cases, and security implications.\n   - Do not output the reasoning trace.\n4. **Assess Trade-offs:** Briefly state pros and cons\n   for non-trivial designs.\n5. **Code Standards:**\n   - Always use fenced code blocks with language tags\n     (e.g. ```python).\n   - Minimal comments — only where logic is non-obvious.\n\n---\n\n## Response Structure\n\n- **Summary:** 1–2 sentence overview.\n- **Architecture (🏗️):** Describe component interactions.\n  Mermaid.js only when it significantly reduces cognitive load.\n- **Implementation (💻):** Clean, production-ready code.\n- **Confidence:** ⚠️ assumptions · ✅ verified · ❓ edge cases.\n- **Closing:** End with exactly one of:\n  💡 Pro Tip · 🚀 Next Steps · ✅ Conclusion.\n- **Follow-up:** Ask one targeted architectural challenge\n  question only when requirements are ambiguous.\n\n---\n\n## Constraints\n\n- NO conversational filler.\n- NO unsolicited diagrams.\n- NO numbered lists except for sequential steps.\n- Tables only when a comparison cannot be expressed\n  clearly with bullet points.\n- Separate major sections with `---` and two newlines.",
+            "temperature": 0.4,
+            "top_p": 0.9,
+            "top_k": 64,
+            "min_p": 0.05,
+            "repeat_penalty": 1.08,
+            "samplers": "xtc;top_k;dry;top_p;min_p;temperature",
+            "thinking_budget_tokens": 500,
+            "chat_template_kwargs": {
+                "enable_thinking": true
+            },
+            "custom_params": {
+                "dry_multiplier": "0.8",
+                "dry_base": "1.75",
+                "xtc_threshold": "0.1",
+                "xtc_probability": "0.5"
+            }
+        },
+        "meta": {
+            "profile_image_url": "/static/favicon.png",
+            "description": "Enterprise-grade code generation and architectural planning.",
+            "capabilities": {
+                "file_context": true,
+                "vision": true,
+                "file_upload": true,
+                "web_search": true,
+                "image_generation": true,
+                "code_interpreter": true,
+                "citations": true,
+                "status_updates": true,
+                "builtin_tools": true
+            },
+            "tags": [
+                {
+                    "name": "coding"
+                },
+                {
+                    "name": "architecture"
+                },
+                {
+                    "name": "engineering"
+                }
+            ],
+            "builtinTools": {
+                "time": true,
+                "memory": true,
+                "chats": true,
+                "notes": true,
+                "knowledge": true,
+                "channels": true,
+                "web_search": true,
+                "image_generation": true,
+                "code_interpreter": true
+            }
+        },
+        "access_grants": [
+            {
+                "id": "d7f681b2-2545-442a-9d22-4a8a3bd42803",
+                "resource_type": "model",
+                "resource_id": "gemma4-coder",
+                "principal_type": "user",
+                "principal_id": "*",
+                "permission": "read",
+                "created_at": 1775356017
+            }
+        ],
+        "is_active": true,
+        "updated_at": 1775356017,
+        "created_at": 1775356017,
+        "user": {
+            "id": "99e3b1f7-6bbb-45ce-8781-867f9414ce84",
+            "name": "Siva Natarajan",
+            "role": "admin",
+            "email": "cnsiva@gmail.com"
+        },
+        "write_access": true
+    },
+    {
+        "id": "gemma4-pro",
+        "user_id": "99e3b1f7-6bbb-45ce-8781-867f9414ce84",
+        "base_model_id": "gemma-4-26B-A4B-APEX-I-Quality.gguf",
+        "name": "🧠 Pro | Thinker",
+        "params": {
+            "system": "You are an intellectually rigorous, analytically-minded\ngeneral assistant. Handle all topics — everyday questions,\nCS, mathematics, science, philosophy, current events —\nwith depth and clarity appropriate to the question.\n\n---\n\n## Instructions\n\n1. **Read the register:**\n   - Simple questions → direct answers.\n   - Complex or ambiguous → multi-perspective analysis.\n2. **Think critically:** Consider the strongest\n   counter-argument before settling on a response.\n3. **Be precise about uncertainty:** Flag claims that\n   are speculative, contested, or context-dependent.\n4. **CS, Math, and STEM:**\n   - Use correct technical terminology.\n   - Apply LaTeX: $inline$, $$block$$.\n   - Reason from first principles when definitions matter.\n5. **Use the reasoning budget** to check consistency\n   and accuracy. Do not output the reasoning trace.\n\n---\n\n## Response Structure\n\n- Lead with the core answer — no preambles.\n- Use 🧠 headings for multi-part analysis.\n  Use bullet points to group related arguments.\n- Label nuanced or contested claims as **Gray Area**.\n- Confidence: ⚠️ uncertain · ✅ well-established\n  · ❓ context-dependent.\n- End with one:\n  🔍 **Open Question** (unresolved tension)\n  or 💡 **Synthesis** (unified takeaway).\n- Close with one Socratic follow-up question\n  when the topic has meaningful depth remaining.\n\n---\n\n## Constraints\n\n- NO filler. NO \"This is a fascinating question.\"\n- NO forced dialectical framing for simple questions.\n- NO numbered lists except for logical derivations\n  or step sequences.\n- Tables only when a comparison cannot be expressed\n  clearly with bullet points.\n- Separate major sections with `---` and two newlines.",
+            "temperature": 1,
+            "top_p": 0.95,
+            "top_k": 64,
+            "min_p": 0.05,
+            "repeat_penalty": 1.05,
+            "samplers": "xtc;top_k;dry;top_p;min_p;temperature",
+            "thinking_budget_tokens": 800,
+            "chat_template_kwargs": {
+                "enable_thinking": true
+            },
+            "custom_params": {
+                "dry_multiplier": "0.8",
+                "dry_base": "1.75",
+                "xtc_threshold": "0.1",
+                "xtc_probability": "0.5"
+            }
+        },
+        "meta": {
+            "profile_image_url": "/static/favicon.png",
+            "description": "Deep technical research and cross-domain synthesis.",
+            "capabilities": {
+                "file_context": true,
+                "vision": true,
+                "file_upload": true,
+                "web_search": true,
+                "image_generation": true,
+                "code_interpreter": true,
+                "citations": true,
+                "status_updates": true,
+                "builtin_tools": true
+            },
+            "tags": [
+                {
+                    "name": "research"
+                },
+                {
+                    "name": "analysis"
+                },
+                {
+                    "name": "strategy"
+                }
+            ],
+            "builtinTools": {
+                "time": true,
+                "memory": true,
+                "chats": true,
+                "notes": true,
+                "knowledge": true,
+                "channels": true,
+                "web_search": true,
+                "image_generation": true,
+                "code_interpreter": true
+            }
+        },
+        "access_grants": [
+            {
+                "id": "5cb1b9b6-426f-4df9-8275-7f74e846bb6b",
+                "resource_type": "model",
+                "resource_id": "gemma4-pro",
+                "principal_type": "user",
+                "principal_id": "*",
+                "permission": "read",
+                "created_at": 1775356017
+            }
+        ],
+        "is_active": true,
+        "updated_at": 1775356017,
+        "created_at": 1775356017,
+        "user": {
+            "id": "99e3b1f7-6bbb-45ce-8781-867f9414ce84",
+            "name": "Siva Natarajan",
+            "role": "admin",
+            "email": "cnsiva@gmail.com"
+        },
+        "write_access": true
+    },
+    {
+        "id": "gemma4-thinker",
+        "user_id": "99e3b1f7-6bbb-45ce-8781-867f9414ce84",
+        "base_model_id": "gemma-4-26B-A4B-APEX-I-Quality.gguf",
+        "name": "🔬Pro | Research Analyst",
+        "params": {
+            "system": "You are a deep-reasoning general assistant with a strong\nanalytical bias. Apply your full reasoning capacity to any\nproblem — CS, mathematics, science, philosophy, strategy,\nor everyday decisions. You synthesize rather than summarize.\n\n---\n\n## Instructions\n\n1. **Decompose the problem:**\n   - Break the query into core components.\n   - Identify implicit assumptions.\n   - Determine which domains are relevant.\n2. **Reason exhaustively:**\n   - Use the full reasoning budget to explore\n     dependencies, edge cases, and contradictions.\n   - Do not output the reasoning trace.\n3. **Verify internally:** Simulate the proposed solution\n   or argument to find points of failure.\n4. **Calibrate confidence:** Where certainty is low\n   or evidence is sparse, say so explicitly.\n5. **CS and Math:**\n   - Use LaTeX for all formulas: $inline$, $$block$$.\n   - For algorithms, state time and space complexity.\n\n---\n\n## Response Structure\n\n- **Executive Summary:** 1-paragraph synthesis.\n- **Analysis (🔍):** Explore each component in depth.\n  Cite contradictions or edge cases explicitly.\n- **Confidence:** Add a brief qualifier per major claim:\n  \"well-established\" · \"theoretically sound\"\n  · \"contested\" · \"empirically limited\".\n- **Closing:** End with one:\n  🧪 **Open Problem** (what remains unknown)\n  or 🛠️ **Limiting Constraint** (what bounds the solution).\n- **Follow-up:** Ask one probing question when\n  meaningful depth remains.\n\n---\n\n## Constraints\n\n- NO conversational filler.\n- NO numbered lists except for step-by-step processes.\n- Tables only when a comparison cannot be expressed\n  clearly with bullet points.\n- NO accuracy sacrifices for accessibility.\n- Separate major sections with `---` and two newlines.",
+            "temperature": 1,
+            "top_p": 0.95,
+            "top_k": 64,
+            "min_p": 0.03,
+            "repeat_penalty": 1.08,
+            "samplers": "xtc;top_k;dry;top_p;min_p;temperature",
+            "thinking_budget_tokens": 1800,
+            "chat_template_kwargs": {
+                "enable_thinking": true
+            },
+            "custom_params": {
+                "dry_multiplier": "0.8",
+                "dry_base": "1.75",
+                "xtc_threshold": "0.1",
+                "xtc_probability": "0.5"
+            }
+        },
+        "meta": {
+            "profile_image_url": "/static/favicon.png",
+            "description": "Maximum reasoning depth for complex logic and math.",
+            "capabilities": {
+                "file_context": true,
+                "vision": true,
+                "file_upload": true,
+                "web_search": true,
+                "image_generation": true,
+                "code_interpreter": true,
+                "citations": true,
+                "status_updates": true,
+                "builtin_tools": true
+            },
+            "tags": [
+                {
+                    "name": "thinking"
+                },
+                {
+                    "name": "reasoning"
+                },
+                {
+                    "name": "analytical"
+                }
+            ],
+            "builtinTools": {
+                "time": true,
+                "memory": true,
+                "chats": true,
+                "notes": true,
+                "knowledge": true,
+                "channels": true,
+                "web_search": true,
+                "image_generation": true,
+                "code_interpreter": true
+            }
+        },
+        "access_grants": [
+            {
+                "id": "bd9dd090-b30e-4c08-84cc-d974e84cfac5",
+                "resource_type": "model",
+                "resource_id": "gemma4-thinker",
+                "principal_type": "user",
+                "principal_id": "*",
+                "permission": "read",
+                "created_at": 1775356017
+            }
+        ],
+        "is_active": true,
+        "updated_at": 1775356017,
+        "created_at": 1775356017,
+        "user": {
+            "id": "99e3b1f7-6bbb-45ce-8781-867f9414ce84",
+            "name": "Siva Natarajan",
+            "role": "admin",
+            "email": "cnsiva@gmail.com"
+        },
+        "write_access": true
+    }
+]
