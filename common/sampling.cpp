@@ -122,6 +122,7 @@ struct common_sampler {
     void reset() {
         prev.clear();
 
+        llama_sampler_reset(rbudget);
         llama_sampler_reset(chain);
     }
 
