@@ -158,33 +158,6 @@ static void common_reasoning_budget_reset(struct llama_sampler * smpl) {
     ctx->force_pos = 0;
 }
 
-// forward declarations for use in vtable
-static struct llama_sampler * common_reasoning_budget_clone(const struct llama_sampler * smpl);
-
-static void common_reasoning_budget_free(struct llama_sampler * smpl) {
-    delete (common_reasoning_budget_ctx *) smpl->ctx;
-}
-
-static struct llama_sampler_i common_reasoning_budget_i = {
-    /* .name              = */ common_reasoning_budget_name,
-    /* .accept            = */ common_reasoning_budget_accept,
-    /* .apply             = */ common_reasoning_budget_apply,
-    /* .reset             = */ common_reasoning_budget_reset,
-    /* .clone             = */ common_reasoning_budget_clone,
-    /* .free              = */ common_reasoning_budget_free,
-    /* .backend_init      = */ nullptr,
-    /* .backend_accept    = */ nullptr,
-    /* .backend_apply     = */ nullptr,
-    /* .backend_set_input = */ nullptr,
-};
-
-static struct llama_sampler * common_reasoning_budget_clone(const struct llama_sampler * smpl) {
-    const auto * ctx = (const common_reasoning_budget_ctx *) smpl->ctx;
-    return llama_sampler_init(
-        &common_reasoning_budget_i,
-        new common_reasoning_budget_ctx(*ctx));
-}
-
 static struct llama_sampler * common_reasoning_budget_init_state(
         const struct llama_vocab             * vocab,
         const std::vector<llama_token>       & start_tokens,
@@ -211,6 +184,21 @@ static struct llama_sampler * common_reasoning_budget_init_state(
             /* .force_pos     = */ 0,
         }
     );
+}
+
+static struct llama_sampler * common_reasoning_budget_clone(const struct llama_sampler * smpl) {
+    const auto * ctx = (const common_reasoning_budget_ctx *) smpl->ctx;
+    return common_reasoning_budget_init_state(
+        ctx->vocab,
+        ctx->start_matcher.tokens,
+        ctx->end_matcher.tokens,
+        ctx->forced_tokens,
+        ctx->budget,
+        ctx->state);
+}
+
+static void common_reasoning_budget_free(struct llama_sampler * smpl) {
+    delete (common_reasoning_budget_ctx *) smpl->ctx;
 }
 
 struct llama_sampler * common_reasoning_budget_init(
