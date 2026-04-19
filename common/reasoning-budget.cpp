@@ -46,6 +46,7 @@ struct common_reasoning_budget_ctx {
     int32_t budget;           // maximum tokens in reasoning block
     int32_t remaining;        // tokens remaining in budget
 
+    common_reasoning_budget_state initial_state; // state to restore on reset
     common_reasoning_budget_state state;
 
     // for forcing
@@ -150,18 +151,20 @@ static void common_reasoning_budget_apply(struct llama_sampler * smpl, llama_tok
 
 static void common_reasoning_budget_reset(struct llama_sampler * smpl) {
     auto * ctx = (common_reasoning_budget_ctx *) smpl->ctx;
-    ctx->state = REASONING_BUDGET_IDLE;
+    ctx->state = ctx->initial_state;
     ctx->remaining = ctx->budget;
     ctx->start_matcher.reset();
     ctx->end_matcher.reset();
     ctx->force_pos = 0;
 }
 
-// forward declaration for use in clone
 static struct llama_sampler * common_reasoning_budget_init_state(
-        const struct llama_vocab * vocab, const std::vector<llama_token> & start_tokens,
-        const std::vector<llama_token> & end_tokens, const std::vector<llama_token> & forced_tokens,
-        int32_t budget, common_reasoning_budget_state initial_state);
+        const struct llama_vocab             * vocab,
+        const std::vector<llama_token>       & start_tokens,
+        const std::vector<llama_token>       & end_tokens,
+        const std::vector<llama_token>       & forced_tokens,
+        int32_t                                budget,
+        common_reasoning_budget_state          initial_state);
 
 static struct llama_sampler * common_reasoning_budget_clone(const struct llama_sampler * smpl) {
     const auto * ctx = (const common_reasoning_budget_ctx *) smpl->ctx;
@@ -179,12 +182,13 @@ static void common_reasoning_budget_free(struct llama_sampler * smpl) {
 }
 
 static struct llama_sampler_i common_reasoning_budget_i = {
-    /* .name              = */ common_reasoning_budget_name,
-    /* .accept            = */ common_reasoning_budget_accept,
-    /* .apply             = */ common_reasoning_budget_apply,
-    /* .reset             = */ common_reasoning_budget_reset,
-    /* .clone             = */ common_reasoning_budget_clone,
-    /* .free              = */ common_reasoning_budget_free,
+    /* .name   = */ common_reasoning_budget_name,
+    /* .accept = */ common_reasoning_budget_accept,
+    /* .apply  = */ common_reasoning_budget_apply,
+    /* .reset  = */ common_reasoning_budget_reset,
+    /* .clone  = */ common_reasoning_budget_clone,
+    /* .free   = */ common_reasoning_budget_free,
+
     /* .backend_init      = */ nullptr,
     /* .backend_accept    = */ nullptr,
     /* .backend_apply     = */ nullptr,
@@ -212,6 +216,7 @@ static struct llama_sampler * common_reasoning_budget_init_state(
             /* .forced_tokens = */ forced_tokens,
             /* .budget        = */ budget,
             /* .remaining     = */ budget,
+            /* .initial_state = */ initial_state,
             /* .state         = */ initial_state,
             /* .force_pos     = */ 0,
         }

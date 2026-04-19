@@ -227,7 +227,35 @@ int main(void) {
             3);     // forcing continues through i=3
     }
 
-    printf("OK (5 tests passed)\n");
+    // Test 6: Reset behavior
+    // Verify that llama_sampler_reset restores the sampler to its initial_state
+    {
+        const std::vector<llama_token> start = {100};
+        const std::vector<llama_token> end = {101};
+        const std::vector<llama_token> forced = {102};
+        const std::vector<llama_token> prefill = {100, 50}; // starts in COUNTING
+
+        auto * sampler = common_reasoning_budget_init(nullptr, start, end, forced, 10, prefill);
+        GGML_ASSERT(common_reasoning_budget_get_state(sampler) == REASONING_BUDGET_COUNTING);
+
+        // Advance it to DONE
+        llama_sampler_accept(sampler, 101);
+        GGML_ASSERT(common_reasoning_budget_get_state(sampler) == REASONING_BUDGET_DONE);
+
+        // Reset it
+        llama_sampler_reset(sampler);
+
+        // Should be back in COUNTING (from prefill), not IDLE
+        if (common_reasoning_budget_get_state(sampler) != REASONING_BUDGET_COUNTING) {
+            fprintf(stderr, "Test 'reset behavior' FAILED: Expected state COUNTING after reset, got %d\n",
+                (int)common_reasoning_budget_get_state(sampler));
+            GGML_ASSERT(false);
+        }
+        llama_sampler_free(sampler);
+        printf("  Test 'reset behavior' passed\n");
+    }
+
+    printf("OK (6 tests passed)\n");
 
     printf("Testing UTF-8 boundary detection... ");
     test_utf8_boundary_detection();

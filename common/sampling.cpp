@@ -115,6 +115,8 @@ struct common_sampler {
 
     ring_buffer<llama_token> prev;
 
+    std::vector<llama_token> prefill_tokens;
+
     std::vector<llama_token_data> cur;
 
     llama_token_data_array cur_p;
@@ -122,6 +124,13 @@ struct common_sampler {
     void reset() {
         prev.clear();
 
+        llama_sampler_reset(grmr);
+        if (grmr) {
+            for (const auto & token : prefill_tokens) {
+                llama_sampler_accept(grmr, token);
+            }
+        }
+        llama_sampler_reset(rbudget);
         llama_sampler_reset(chain);
     }
 
@@ -389,17 +398,16 @@ struct common_sampler * common_sampler_init(const struct llama_model * model, st
         params.backend_sampling = false;
     }
 
-    auto * result = new common_sampler {
-        /* .params  = */ params,
-        /* .grmr    = */ grmr,
-        /* .rbudget = */ rbudget,
-        /* .chain   = */ chain,
-        /* .prev    = */ ring_buffer<llama_token>(std::max(32, params.n_prev)),
-        /* .cur     = */ {},
-        /* .cur_p   = */ {},
+    return new common_sampler {
+        /* .params          = */ params,
+        /* .grmr            = */ grmr,
+        /* .rbudget         = */ rbudget,
+        /* .chain           = */ chain,
+        /* .prev            = */ ring_buffer<llama_token>(std::max(32, params.n_prev)),
+        /* .prefill_tokens  = */ std::move(prefill_tokens),
+        /* .cur             = */ {},
+        /* .cur_p           = */ {},
     };
-
-    return result;
 }
 
 void common_sampler_free(struct common_sampler * gsmpl) {
@@ -460,13 +468,14 @@ void common_sampler_reset(struct common_sampler * gsmpl) {
 
 struct common_sampler * common_sampler_clone(common_sampler * gsmpl) {
     return new common_sampler {
-        /* .params  = */ gsmpl->params,
-        /* .grmr    = */ llama_sampler_clone(gsmpl->grmr),
-        /* .rbudget = */ llama_sampler_clone(gsmpl->rbudget),
-        /* .chain   = */ llama_sampler_clone(gsmpl->chain),
-        /* .prev    = */ gsmpl->prev,
-        /* .cur     = */ gsmpl->cur,
-        /* .cur_p   = */ gsmpl->cur_p,
+        /* .params          = */ gsmpl->params,
+        /* .grmr            = */ llama_sampler_clone(gsmpl->grmr),
+        /* .rbudget         = */ llama_sampler_clone(gsmpl->rbudget),
+        /* .chain           = */ llama_sampler_clone(gsmpl->chain),
+        /* .prev            = */ gsmpl->prev,
+        /* .prefill_tokens  = */ gsmpl->prefill_tokens,
+        /* .cur             = */ gsmpl->cur,
+        /* .cur_p           = */ gsmpl->cur_p,
     };
 }
 
