@@ -19,7 +19,8 @@ When tuning `.conf` files for MoE models, respect these physical limits and find
   - **Mixed Affinity (Preferred for Burst)**: Use cross-CCD strings like `0-7,24-31` (Qwen) and `16-23,8-15` (Mythos) to maximize single-model burst performance (up to 71 tok/s for 35B).
   - **Strict Isolation (Preferred for Multitasking)**: Use strict ranges like `0-7,16-23` (CCD0) and `8-15,24-31` (CCD1) to reduce prompt evaluation stutter by ~24% during simultaneous load.
 - **CUDA Optimization**:
-  - **Peer Copy**: Always build with `-DGGML_CUDA_PEER_COPY=ON`. This is critical for MoE models when experts are split between VRAM and System RAM (DDR5), significantly reducing expert-switching latency.
+  - **Peer Copy**: Always build with `-DGGML_CUDA_NO_PEER_COPY=OFF`. This is critical for MoE models when experts are split between VRAM and System RAM (DDR5), significantly reducing expert-switching latency.
+  - **Binary Compression**: For CUDA 12.8+, use `-DGGML_CUDA_COMPRESSION_MODE=speed` to optimize link times and kernel performance.
   - **Architectures**: Set `CMAKE_CUDA_ARCHITECTURES="89"` for the RTX 4070 Ti Super.
 - **VRAM Safeguards**:
   - Max combined Context + Weights must not exceed 15.5GB.

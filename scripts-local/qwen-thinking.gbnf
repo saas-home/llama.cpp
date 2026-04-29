@@ -1,0 +1,3 @@
+root    ::= thinking answer
+thinking ::= "<think>" [^<]* "</think>"
+answer   ::= [^<]+

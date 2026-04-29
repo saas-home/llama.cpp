@@ -182,15 +182,27 @@ if [[ "$BUILD" == true ]]; then
     git pull || true
 
     # 6. Build with best optimizations
-    echo "🛠️ Building with maximum optimizations..."
+    echo "🛠️ Building with maximum optimizations (CUDA 13.2 optimized)..."
+    
+    CUDA_ARGS=()
+    if [[ -x "/usr/local/cuda/bin/nvcc" ]]; then
+        CUDA_ARGS+=("-DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc")
+    fi
+
     cmake -B build -S . -G Ninja \
       -DCMAKE_BUILD_TYPE=Release \
+      "${CUDA_ARGS[@]}" \
       -DGGML_NATIVE=ON \
+      -DGGML_AVX512=ON \
+      -DGGML_AVX512_VNNI=ON \
+      -DGGML_AVX512_BF16=ON \
       -DGGML_CUDA=ON \
       -DGGML_CUDA_FA=ON \
-      -DGGML_CUDA_FA_ALL_QUANTS=ON \
+      -DGGML_CUDA_FA_ALL_QUANTS=OFF \
       -DGGML_CUDA_GRAPHS=ON \
-      -DGGML_CUDA_PEER_COPY=ON \
+      -DGGML_CUDA_NO_PEER_COPY=OFF \
+      -DGGML_CUDA_PEER_MAX_BATCH_SIZE=128 \
+      -DGGML_CUDA_COMPRESSION_MODE=speed \
       -DGGML_CURL=ON \
       -DGGML_OPENMP=ON \
       -DCMAKE_CUDA_ARCHITECTURES="89"
