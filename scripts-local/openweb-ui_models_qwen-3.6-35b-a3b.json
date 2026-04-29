@@ -1,0 +1,267 @@
+[
+    {
+        "id": "qw3-35b-fim",
+        "user_id": "99e3b1f7-6bbb-45ce-8781-867f9414ce84",
+        "base_model_id": "Qwen3.6-35B-A3B",
+        "name": "🚀 Ultra Fast | Instant Predictor",
+        "params": {
+            "system": "Predict the next most likely tokens.",
+            "temperature": 0.2,
+            "top_p": 0.9,
+            "top_k": 40.0,
+            "min_p": 0.05,
+            "repeat_penalty": 1.0,
+            "samplers": "top_k;top_p",
+            "chat_template_kwargs": {
+                "enable_thinking": false
+            }
+        },
+        "meta": {
+            "description": "Predictive autocomplete.",
+            "capabilities": {
+                "file_context": true,
+                "code_interpreter": true
+            },
+            "profile_image_url": "/static/favicon.png"
+        },
+        "is_active": true,
+        "write_access": true
+    },
+    {
+        "id": "qw3-35b-fast",
+        "user_id": "99e3b1f7-6bbb-45ce-8781-867f9414ce84",
+        "base_model_id": "Qwen3.6-35B-A3B",
+        "name": "⚡ Fast | Direct Assistant",
+        "params": {
+            "system": "You are a Qwen 3.6 APEX-I Assistant. Provide direct and factual answers.",
+            "temperature": 1.0,
+            "top_p": 0.95,
+            "top_k": 20.0,
+            "min_p": 0.0,
+            "presence_penalty": 1.5,
+            "repeat_penalty": 1.0,
+            "repeat_last_n": 128.0,
+            "samplers": "dry;top_k;top_p;min_p;temperature",
+            "thinking_budget_tokens": 128.0,
+            "dry_multiplier": 0.8,
+            "dry_base": 1.75,
+            "dry_allowed_length": 2.0,
+            "dry_penalty_last_n": 4096.0,
+            "chat_template_kwargs": {
+                "enable_thinking": true,
+                "preserve_thinking": true
+            }
+        },
+        "meta": {
+            "description": "High-speed direct answers.",
+            "capabilities": {
+                "vision": true,
+                "web_search": true,
+                "file_upload": true,
+                "status_updates": true,
+                "builtin_tools": true
+            },
+            "profile_image_url": "/static/favicon.png"
+        },
+        "is_active": true,
+        "write_access": true
+    },
+    {
+        "id": "qw3-35b-coder",
+        "user_id": "99e3b1f7-6bbb-45ce-8781-867f9414ce84",
+        "base_model_id": "Qwen3.6-35B-A3B",
+        "name": "💻 Coder | Architect",
+        "params": {
+            "system": "You are an expert Software Engineer. Provide high-quality code and architectural guidance.",
+            "temperature": 0.6,
+            "top_p": 0.95,
+            "top_k": 20.0,
+            "min_p": 0.0,
+            "presence_penalty": 0.0,
+            "repeat_penalty": 1.0,
+            "repeat_last_n": 128.0,
+            "samplers": "dry;top_k;min_p",
+            "thinking_budget_tokens": 1024.0,
+            "dry_multiplier": 0.8,
+            "dry_base": 1.75,
+            "dry_allowed_length": 2.0,
+            "dry_penalty_last_n": 4096.0,
+            "chat_template_kwargs": {
+                "preserve_thinking": true
+            }
+        },
+        "meta": {
+            "description": "High-precision code and design.",
+            "capabilities": {
+                "code_interpreter": true,
+                "file_context": true,
+                "builtin_tools": true
+            },
+            "profile_image_url": "/static/favicon.png"
+        },
+        "is_active": true,
+        "write_access": true
+    },
+    {
+        "id": "qw3-35b-pro",
+        "user_id": "99e3b1f7-6bbb-45ce-8781-867f9414ce84",
+        "base_model_id": "Qwen3.6-35B-A3B",
+        "name": "🧠 Pro | Deep Thinker",
+        "params": {
+            "system": "You are an Elite Analytical Agent. Perform multi-perspective reasoning and deep analysis.",
+            "temperature": 1.0,
+            "top_p": 0.95,
+            "top_k": 20.0,
+            "min_p": 0.0,
+            "presence_penalty": 1.5,
+            "repeat_penalty": 1.0,
+            "repeat_last_n": 128.0,
+            "samplers": "dry;top_p;temperature",
+            "thinking_budget_tokens": 2048.0,
+            "dry_multiplier": 0.8,
+            "dry_base": 1.75,
+            "dry_allowed_length": 2.0,
+            "dry_penalty_last_n": 4096.0,
+            "chat_template_kwargs": {
+                "preserve_thinking": true
+            }
+        },
+        "meta": {
+            "description": "Multi-perspective reasoning.",
+            "capabilities": {
+                "vision": true,
+                "web_search": true,
+                "builtin_tools": true
+            },
+            "profile_image_url": "/static/favicon.png"
+        },
+        "is_active": true,
+        "write_access": true
+    },
+    {
+        "id": "qw3-35b-research",
+        "user_id": "99e3b1f7-6bbb-45ce-8781-867f9414ce84",
+        "base_model_id": "Qwen3.6-35B-A3B",
+        "name": "🔬 Research | Analyst",
+        "params": {
+            "system": "You are a Senior Research Analyst. Perform exhaustive root-cause analysis and data synthesis.",
+            "temperature": 1.0,
+            "top_p": 0.95,
+            "top_k": 20.0,
+            "min_p": 0.0,
+            "presence_penalty": 1.5,
+            "repeat_penalty": 1.0,
+            "repeat_last_n": 128.0,
+            "samplers": "dry;top_k;top_p;min_p;temperature",
+            "thinking_budget_tokens": 3072.0,
+            "dry_multiplier": 0.8,
+            "dry_base": 1.75,
+            "dry_allowed_length": 2.0,
+            "dry_penalty_last_n": 4096.0,
+            "chat_template_kwargs": {
+                "preserve_thinking": true
+            }
+        },
+        "meta": {
+            "description": "Maximum logical depth.",
+            "capabilities": {
+                "web_search": true,
+                "code_interpreter": true,
+                "builtin_tools": true
+            },
+            "profile_image_url": "/static/favicon.png"
+        },
+        "is_active": true,
+        "write_access": true
+    },
+    {
+        "id": "qw3-35b-creative",
+        "user_id": "99e3b1f7-6bbb-45ce-8781-867f9414ce84",
+        "base_model_id": "Qwen3.6-35B-A3B",
+        "name": "🎨 Creative | Stylist",
+        "params": {
+            "system": "You are a Master Storyteller. Provide evocative and descriptive narratives.",
+            "temperature": 1.0,
+            "top_p": 0.95,
+            "top_k": 20.0,
+            "min_p": 0.0,
+            "presence_penalty": 1.5,
+            "repeat_penalty": 1.0,
+            "repeat_last_n": 128.0,
+            "samplers": "dry;top_p",
+            "thinking_budget_tokens": 1024.0,
+            "dry_multiplier": 0.8,
+            "dry_base": 1.75,
+            "dry_allowed_length": 2.0,
+            "dry_penalty_last_n": 4096.0,
+            "chat_template_kwargs": {
+                "preserve_thinking": true
+            }
+        },
+        "meta": {
+            "description": "High-temperature creativity.",
+            "capabilities": {
+                "vision": true
+            },
+            "profile_image_url": "/static/favicon.png"
+        },
+        "is_active": true,
+        "write_access": true
+    },
+    {
+        "id": "qw3-35b-math",
+        "user_id": "99e3b1f7-6bbb-45ce-8781-867f9414ce84",
+        "base_model_id": "Qwen3.6-35B-A3B",
+        "name": "🔢 Math | Logic Master",
+        "params": {
+            "system": "You are a Pure Mathematician. Provide precise step-by-step derivations.",
+            "temperature": 0.1,
+            "top_p": 0.8,
+            "top_k": 20.0,
+            "min_p": 0.0,
+            "repeat_penalty": 1.0,
+            "samplers": "top_k;temperature",
+            "thinking_budget_tokens": 2048.0,
+            "chat_template_kwargs": {
+                "preserve_thinking": true
+            }
+        },
+        "meta": {
+            "description": "Ultra-precise math.",
+            "capabilities": {
+                "code_interpreter": true
+            },
+            "profile_image_url": "/static/favicon.png"
+        },
+        "is_active": true,
+        "write_access": true
+    },
+    {
+        "id": "qw3-35b-extractor",
+        "user_id": "99e3b1f7-6bbb-45ce-8781-867f9414ce84",
+        "base_model_id": "Qwen3.6-35B-A3B",
+        "name": "📋 Extractor | Data Miner",
+        "params": {
+            "system": "You are a Data Extraction Engine. Extract structured information into Markdown tables or JSON.",
+            "temperature": 0.2,
+            "top_p": 0.9,
+            "top_k": 40.0,
+            "min_p": 0.05,
+            "repeat_penalty": 1.0,
+            "samplers": "top_k;top_p",
+            "thinking_budget_tokens": 256.0,
+            "chat_template_kwargs": {
+                "preserve_thinking": true
+            }
+        },
+        "meta": {
+            "description": "Fast data extraction.",
+            "capabilities": {
+                "file_context": true
+            },
+            "profile_image_url": "/static/favicon.png"
+        },
+        "is_active": true,
+        "write_access": true
+    }
+]
