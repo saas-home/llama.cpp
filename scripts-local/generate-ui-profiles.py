@@ -111,22 +111,25 @@ def generate_personas(conf, config_name):
         chat_kwargs = { "preserve_thinking": True }
         continuity = "Maintain logical continuity by recursively validating your current plan against previous reasoning traces in this conversation history.\n\n"
         thinking_budget = 2048.0
-        samplers = "dry;top_k;top_p;xtc;min_p;temperature"
+        samplers = "top_k;top_p;min_p;temperature"
     elif is_gemma4:
         identity = "Gemma-4 PRISM-Optimized Assistant"
         chat_kwargs = {} # No preserve_thinking for Gemma-4
         continuity = ""  # No recursive logic for Gemma-4 (memoryless thoughts)
         thinking_budget = 1024.0
-        samplers = "dry;top_k;top_p;xtc;min_p;temperature"
+        samplers = "top_k;top_p;min_p;temperature"
     else:
         identity = "Standard LLM Engine"
         chat_kwargs = {}
         continuity = ""
         thinking_budget = 1024.0
-        samplers = "dry;top_k;top_p;xtc;min_p;temperature"
+        samplers = "top_k;top_p;min_p;temperature"
 
-    # Strict reasoning extraction directive
-    reasoning_protocol = "IMPORTANT: You MUST wrap all internal thinking and logical scratchpads inside <think> and </think> tags. This is mandatory for the server to correctly extract and hide your reasoning.\n\n"
+    # Reasoning extraction is handled natively by each model's chat template
+    # (qwen uses <think> tags, gemma uses <|channel> markers). Forcing a wrong-tag
+    # directive in the system prompt corrupts gemma output and over-triggers thinking
+    # on personas where enable_thinking is False. Trust the template.
+    reasoning_protocol = ""
 
     persona_templates = [
         {
@@ -148,7 +151,7 @@ def generate_personas(conf, config_name):
             "suffix": "fast",
             "name": "⚡ Fast | Direct Assistant",
             "params": {
-                "system": f"You are a {identity}. Provide immediate, high-density facts.\n\n{reasoning_protocol}Keep internal reasoning extremely brief and skip drafting the final response. If your thinking is interrupted, immediately transition to the final answer format.\n\n### ✅ Response Format\n- Use **bold** for key terms.\n- Use double-newlines and keep paragraphs under 3 lines.\n- Use `---` for dividers.",
+                "system": f"You are a {identity}. Provide immediate, high-density facts.\n\n### ✅ Response Format\n- Use **bold** for key terms.\n- Use double-newlines and keep paragraphs under 3 lines.\n- Use `---` for dividers.",
                 "temperature": temp,
                 "top_p": top_p,
                 "top_k": top_k,
@@ -158,12 +161,11 @@ def generate_personas(conf, config_name):
                 "repeat_penalty": repeat_penalty,
                 "repeat_last_n": 16.0,
                 "samplers": "top_k;top_p",
-                "thinking_budget_tokens": 64.0,
                 "dry_multiplier": dry_multiplier,
                 "dry_base": dry_base,
                 "dry_allowed_length": dry_allowed,
                 "dry_penalty_last_n": dry_last_n,
-                "chat_template_kwargs": { "enable_thinking": True }
+                "chat_template_kwargs": { "enable_thinking": False }
             },
             "meta": { "description": "High-speed direct answers.", "capabilities": { "vision": True, "web_search": True, "file_upload": True, "status_updates": True, "builtin_tools": True } }
         },
@@ -183,8 +185,8 @@ def generate_personas(conf, config_name):
                 "xtc_probability": xtc_prob,
                 "xtc_threshold": xtc_threshold,
                 "repeat_penalty": 1.1,
-                "samplers": "dry;top_k;min_p",
-                "thinking_budget_tokens": 750.0,
+                "samplers": "top_k;top_p;min_p;temperature",
+                "thinking_budget_tokens": 1024.0,
                 "dry_multiplier": dry_multiplier,
                 "dry_base": dry_base,
                 "dry_allowed_length": dry_allowed,
@@ -208,8 +210,8 @@ def generate_personas(conf, config_name):
                 "xtc_probability": xtc_prob,
                 "xtc_threshold": xtc_threshold,
                 "repeat_penalty": 1.05,
-                "samplers": "dry;top_p;temperature",
-                "thinking_budget_tokens": 1536.0,
+                "samplers": "top_k;top_p;min_p;temperature",
+                "thinking_budget_tokens": 2048.0,
                 "dry_multiplier": dry_multiplier,
                 "dry_base": dry_base,
                 "dry_allowed_length": dry_allowed,
@@ -231,7 +233,7 @@ def generate_personas(conf, config_name):
                 "xtc_threshold": xtc_threshold,
                 "repeat_penalty": 1.08,
                 "samplers": samplers,
-                "thinking_budget_tokens": 2048.0,
+                "thinking_budget_tokens": 3072.0,
                 "dry_multiplier": dry_multiplier,
                 "dry_base": dry_base,
                 "dry_allowed_length": dry_allowed,
@@ -244,9 +246,9 @@ def generate_personas(conf, config_name):
             "suffix": "creative",
             "name": "🎨 Creative | Stylist",
             "params": {
-                "system": f"You are a Master Storyteller using {identity}. " + 
-                          ("Perform frame-precise temporal analysis for video and image inputs.\n\n" if is_agentic else "") + 
-                          f"{reasoning_protocol}" + 
+                "system": f"You are a Master Storyteller using {identity}. " +
+                          ("Perform frame-precise temporal analysis for video and image inputs.\n\n" if is_gemma4 else "") +
+                          f"{reasoning_protocol}" +
                           "### ✨ Narrative Style\n- Use evocative, descriptive language.\n- Use 🎭 for character shifts and ✨ for key moments.\n- Maintain rhythm with short paragraphs and double-newlines.",
                 "temperature": 0.85,
                 "top_p": top_p,
@@ -255,7 +257,7 @@ def generate_personas(conf, config_name):
                 "xtc_probability": xtc_prob,
                 "xtc_threshold": xtc_threshold,
                 "repeat_penalty": 1.02,
-                "samplers": "dry;top_p",
+                "samplers": "top_p;temperature",
                 "thinking_budget_tokens": 1024.0,
                 "dry_multiplier": dry_multiplier,
                 "dry_base": dry_base,
@@ -276,7 +278,7 @@ def generate_personas(conf, config_name):
                 "min_p": 0.01,
                 "repeat_penalty": 1.0,
                 "samplers": "top_k;temperature",
-                "thinking_budget_tokens": 1024.0,
+                "thinking_budget_tokens": 2048.0,
                 "chat_template_kwargs": chat_kwargs
             },
             "meta": { "description": "Ultra-precise math.", "capabilities": { "code_interpreter": True } }
@@ -293,7 +295,7 @@ def generate_personas(conf, config_name):
                 "repeat_penalty": 1.0,
                 "samplers": "top_k;top_p",
                 "thinking_budget_tokens": 256.0,
-                "chat_template_kwargs": chat_kwargs
+                "chat_template_kwargs": { "enable_thinking": False }
             },
             "meta": { "description": "Fast data extraction.", "capabilities": { "file_context": True } }
         }
@@ -308,6 +310,7 @@ def generate_personas(conf, config_name):
             "name": t["name"],
             "params": t["params"],
             "meta": t["meta"],
+            "access_control": None,  # null = public (visible to all users in OpenWebUI)
             "is_active": True,
             "write_access": True
         }

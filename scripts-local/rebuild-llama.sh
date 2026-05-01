@@ -27,7 +27,11 @@ CONFIG_OVERRIDE=""
 # 0. Dependency check for Ubuntu
 if [[ -f /etc/lsb-release ]] && grep -q "Ubuntu" /etc/lsb-release; then
     echo "🔍 Checking for Ubuntu dependencies..."
-    DEPS=(build-essential cmake ninja-build git libcurl4-openssl-dev pkg-config nvidia-cuda-toolkit)
+    DEPS=(build-essential cmake ninja-build git libcurl4-openssl-dev pkg-config)
+    # Only auto-install Ubuntu's nvidia-cuda-toolkit if NVIDIA's official toolkit isn't present
+    if [[ ! -x /usr/local/cuda/bin/nvcc ]]; then
+        DEPS+=(nvidia-cuda-toolkit)
+    fi
     MISSING_DEPS=()
     for dep in "${DEPS[@]}"; do
         if ! dpkg -s "$dep" >/dev/null 2>&1; then
@@ -192,17 +196,19 @@ if [[ "$BUILD" == true ]]; then
     cmake -B build -S . -G Ninja \
       -DCMAKE_BUILD_TYPE=Release \
       "${CUDA_ARGS[@]}" \
+      -DCMAKE_CUDA_HOST_COMPILER=/usr/bin/g++-14 \
       -DGGML_NATIVE=ON \
       -DGGML_AVX512=ON \
       -DGGML_AVX512_VNNI=ON \
       -DGGML_AVX512_BF16=ON \
       -DGGML_CUDA=ON \
       -DGGML_CUDA_FA=ON \
-      -DGGML_CUDA_FA_ALL_QUANTS=OFF \
+      -DGGML_CUDA_FA_ALL_QUANTS=ON \
       -DGGML_CUDA_GRAPHS=ON \
       -DGGML_CUDA_NO_PEER_COPY=OFF \
       -DGGML_CUDA_PEER_MAX_BATCH_SIZE=128 \
       -DGGML_CUDA_COMPRESSION_MODE=speed \
+      -DGGML_CUDA_NO_VMM=ON \
       -DGGML_CURL=ON \
       -DGGML_OPENMP=ON \
       -DCMAKE_CUDA_ARCHITECTURES="89"

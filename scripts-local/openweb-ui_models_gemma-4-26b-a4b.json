@@ -1,17 +1,17 @@
 [
     {
-        "id": "gemma-4-26b-a4b-fim",
+        "id": "gemma-26b-fim",
         "user_id": "99e3b1f7-6bbb-45ce-8781-867f9414ce84",
         "base_model_id": "gemma-4-26b-a4b-it",
         "name": "🚀 Ultra Fast | Instant Predictor",
         "params": {
-            "system": "Predict the next most likely tokens. No conversational filler.\n\nUse double-newlines and keep paragraphs under 3 lines.",
-            "temperature": 0.0,
-            "top_p": 1.0,
-            "top_k": 1.0,
-            "min_p": 0.0,
+            "system": "Predict the next most likely tokens. No conversational filler.",
+            "temperature": 0.2,
+            "top_p": 0.9,
+            "top_k": 40.0,
+            "min_p": 0.05,
             "repeat_penalty": 1.0,
-            "samplers": "top_k",
+            "samplers": "top_k;top_p",
             "chat_template_kwargs": {
                 "enable_thinking": false
             }
@@ -24,31 +24,33 @@
             },
             "profile_image_url": "/static/favicon.png"
         },
+        "access_control": null,
         "is_active": true,
         "write_access": true
     },
     {
-        "id": "gemma-4-26b-a4b-fast",
+        "id": "gemma-26b-fast",
         "user_id": "99e3b1f7-6bbb-45ce-8781-867f9414ce84",
         "base_model_id": "gemma-4-26b-a4b-it",
         "name": "⚡ Fast | Direct Assistant",
         "params": {
             "system": "You are a Gemma-4 PRISM-Optimized Assistant. Provide immediate, high-density facts.\n\n### ✅ Response Format\n- Use **bold** for key terms.\n- Use double-newlines and keep paragraphs under 3 lines.\n- Use `---` for dividers.",
-            "temperature": 0.85,
+            "temperature": 1.0,
             "top_p": 0.95,
             "top_k": 64.0,
-            "min_p": 0.05,
+            "min_p": 0.02,
             "xtc_probability": 0.1,
             "xtc_threshold": 0.1,
             "repeat_penalty": 1.1,
-            "repeat_last_n": 128.0,
-            "samplers": "dry;top_k;top_p;xtc;min_p;temperature",
-            "thinking_budget_tokens": 128.0,
+            "repeat_last_n": 16.0,
+            "samplers": "top_k;top_p",
             "dry_multiplier": 0.8,
             "dry_base": 1.75,
             "dry_allowed_length": 2.0,
             "dry_penalty_last_n": 4096.0,
-            "chat_template_kwargs": {}
+            "chat_template_kwargs": {
+                "enable_thinking": false
+            }
         },
         "meta": {
             "description": "High-speed direct answers.",
@@ -61,23 +63,25 @@
             },
             "profile_image_url": "/static/favicon.png"
         },
+        "access_control": null,
         "is_active": true,
         "write_access": true
     },
     {
-        "id": "gemma-4-26b-a4b-coder",
+        "id": "gemma-26b-coder",
         "user_id": "99e3b1f7-6bbb-45ce-8781-867f9414ce84",
         "base_model_id": "gemma-4-26b-a4b-it",
         "name": "💻 Coder | Architect",
         "params": {
-            "system": "You are a Lead Software Engineer using Gemma-4 PRISM-Optimized Assistant. Deliver the final solution only; strictly exclude internal reasoning traces from this response block.\n\n### 🏗️ Engineering\n- Use 🏗️ for architecture, 🛡️ for security, and ⚙️ for logic.\n- Provide production-ready code blocks.\n- Use double-newlines and keep paragraphs under 3 lines.\n- Focus on complexity (🚀) and edge cases (⚠️).",
-            "temperature": 0.6,
-            "top_p": 0.95,
-            "top_k": 20.0,
-            "min_p": 0.08,
-            "repeat_penalty": 1.05,
-            "repeat_last_n": 256.0,
-            "samplers": "dry;top_k;min_p",
+            "system": "You are a Lead Software Engineer using Gemma-4 PRISM-Optimized Assistant. ### 🏗️ Engineering\n- Use 🏗️ for architecture, 🛡️ for security, and ⚙️ for logic.\n- Provide production-ready code blocks.\n- Use double-newlines and keep paragraphs under 3 lines.\n- Focus on complexity (🚀) and edge cases (⚠️).",
+            "temperature": 0.2,
+            "top_p": 0.8,
+            "top_k": 64.0,
+            "min_p": 0.02,
+            "xtc_probability": 0.1,
+            "xtc_threshold": 0.1,
+            "repeat_penalty": 1.1,
+            "samplers": "top_k;top_p;min_p;temperature",
             "thinking_budget_tokens": 1024.0,
             "dry_multiplier": 0.8,
             "dry_base": 1.75,
@@ -94,23 +98,25 @@
             },
             "profile_image_url": "/static/favicon.png"
         },
+        "access_control": null,
         "is_active": true,
         "write_access": true
     },
     {
-        "id": "gemma-4-26b-a4b-pro",
+        "id": "gemma-26b-pro",
         "user_id": "99e3b1f7-6bbb-45ce-8781-867f9414ce84",
         "base_model_id": "gemma-4-26b-a4b-it",
         "name": "🧠 Pro | Deep Thinker",
         "params": {
-            "system": "You are an Elite Analytical Agent using Gemma-4 PRISM-Optimized Assistant. Deliver the final solution only; strictly exclude internal reasoning traces from this response block.\n\n### 🔍 Analysis\n- Always start sections with contextual emojis.\n- Use **LaTeX** ($inline$) for technical notation.\n- Use 🆚 to contrast and ⚖️ for trade-offs.\n- Use double-newlines and keep paragraphs under 3 lines.",
-            "temperature": 0.55,
+            "system": "You are an Elite Analytical Agent using Gemma-4 PRISM-Optimized Assistant. ### 🔍 Analysis\n- Always start sections with contextual emojis.\n- Use **LaTeX** ($inline$) for technical notation.\n- Use 🆚 to contrast and ⚖️ for trade-offs.\n- Use double-newlines and keep paragraphs under 3 lines.",
+            "temperature": 0.5,
             "top_p": 0.95,
             "top_k": 64.0,
-            "min_p": 0.08,
+            "min_p": 0.02,
+            "xtc_probability": 0.1,
+            "xtc_threshold": 0.1,
             "repeat_penalty": 1.05,
-            "repeat_last_n": 256.0,
-            "samplers": "dry;top_p;temperature",
+            "samplers": "top_k;top_p;min_p;temperature",
             "thinking_budget_tokens": 2048.0,
             "dry_multiplier": 0.8,
             "dry_base": 1.75,
@@ -127,24 +133,26 @@
             },
             "profile_image_url": "/static/favicon.png"
         },
+        "access_control": null,
         "is_active": true,
         "write_access": true
     },
     {
-        "id": "gemma-4-26b-a4b-research",
+        "id": "gemma-26b-research",
         "user_id": "99e3b1f7-6bbb-45ce-8781-867f9414ce84",
         "base_model_id": "gemma-4-26b-a4b-it",
         "name": "🔬 Research | Analyst",
         "params": {
-            "system": "You are a Senior Research Analyst using Gemma-4 PRISM-Optimized Assistant. Deliver the final solution only; strictly exclude internal reasoning traces from this response block.\n\n### 📊 Research Report\n- Use Markdown **tables** (📊) for data.\n- Label: ✅ Verified · ⚠️ Speculative · ❓ Uncertain.\n- Use double-newlines and keep paragraphs under 3 lines.\n- Use 📈 for trends.",
-            "temperature": 0.4,
+            "system": "You are a Senior Research Analyst using Gemma-4 PRISM-Optimized Assistant. Perform exhaustive root-cause stress-testing.\n\n### 📊 Research Report\n- Use Markdown **tables** (📊) for data.\n- Label: ✅ Verified · ⚠️ Speculative · ❓ Uncertain.\n- Use double-newlines and keep paragraphs under 3 lines.\n- Use 📈 for trends.",
+            "temperature": 0.35,
             "top_p": 0.95,
             "top_k": 64.0,
-            "min_p": 0.05,
-            "repeat_penalty": 1.05,
-            "repeat_last_n": 256.0,
-            "samplers": "dry;top_k;min_p",
-            "thinking_budget_tokens": 4096.0,
+            "min_p": 0.02,
+            "xtc_probability": 0.1,
+            "xtc_threshold": 0.1,
+            "repeat_penalty": 1.08,
+            "samplers": "top_k;top_p;min_p;temperature",
+            "thinking_budget_tokens": 3072.0,
             "dry_multiplier": 0.8,
             "dry_base": 1.75,
             "dry_allowed_length": 2.0,
@@ -160,23 +168,25 @@
             },
             "profile_image_url": "/static/favicon.png"
         },
+        "access_control": null,
         "is_active": true,
         "write_access": true
     },
     {
-        "id": "gemma-4-26b-a4b-creative",
+        "id": "gemma-26b-creative",
         "user_id": "99e3b1f7-6bbb-45ce-8781-867f9414ce84",
         "base_model_id": "gemma-4-26b-a4b-it",
         "name": "🎨 Creative | Stylist",
         "params": {
             "system": "You are a Master Storyteller using Gemma-4 PRISM-Optimized Assistant. Perform frame-precise temporal analysis for video and image inputs.\n\n### ✨ Narrative Style\n- Use evocative, descriptive language.\n- Use 🎭 for character shifts and ✨ for key moments.\n- Maintain rhythm with short paragraphs and double-newlines.",
-            "temperature": 0.7,
+            "temperature": 0.85,
             "top_p": 0.95,
             "top_k": 64.0,
-            "min_p": 0.05,
-            "repeat_penalty": 1.05,
-            "repeat_last_n": 256.0,
-            "samplers": "dry;top_p;temperature",
+            "min_p": 0.02,
+            "xtc_probability": 0.1,
+            "xtc_threshold": 0.1,
+            "repeat_penalty": 1.02,
+            "samplers": "top_p;temperature",
             "thinking_budget_tokens": 1024.0,
             "dry_multiplier": 0.8,
             "dry_base": 1.75,
@@ -191,28 +201,24 @@
             },
             "profile_image_url": "/static/favicon.png"
         },
+        "access_control": null,
         "is_active": true,
         "write_access": true
     },
     {
-        "id": "gemma-4-26b-a4b-math",
+        "id": "gemma-26b-math",
         "user_id": "99e3b1f7-6bbb-45ce-8781-867f9414ce84",
         "base_model_id": "gemma-4-26b-a4b-it",
         "name": "🔢 Math | Logic Master",
         "params": {
-            "system": "You are a Pure Mathematician using Gemma-4 PRISM-Optimized Assistant. Deliver the final solution only; strictly exclude internal reasoning traces from this response block.\n\n### 📐 Derivation\n- Always use **LaTeX** for all equations.\n- Use $\\therefore$ for 'therefore' and $\\implies$ for 'implies'.\n- Use double-newlines and keep paragraphs under 3 lines.",
+            "system": "You are a Pure Mathematician using Gemma-4 PRISM-Optimized Assistant. Use extreme precision and step-by-step derivation.\n\n### 📐 Derivation\n- Always use **LaTeX** for all equations.\n- Use $\\therefore$ for 'therefore' and $\\implies$ for 'implies'.\n- Use double-newlines and keep paragraphs under 3 lines.",
             "temperature": 0.1,
-            "top_p": 0.95,
-            "top_k": 64.0,
-            "min_p": 0.1,
-            "repeat_penalty": 1.05,
-            "repeat_last_n": 256.0,
-            "samplers": "dry;top_k;min_p",
+            "top_p": 0.8,
+            "top_k": 20.0,
+            "min_p": 0.01,
+            "repeat_penalty": 1.0,
+            "samplers": "top_k;temperature",
             "thinking_budget_tokens": 2048.0,
-            "dry_multiplier": 0.8,
-            "dry_base": 1.75,
-            "dry_allowed_length": 2.0,
-            "dry_penalty_last_n": 4096.0,
             "chat_template_kwargs": {}
         },
         "meta": {
@@ -222,22 +228,24 @@
             },
             "profile_image_url": "/static/favicon.png"
         },
+        "access_control": null,
         "is_active": true,
         "write_access": true
     },
     {
-        "id": "gemma-4-26b-a4b-extractor",
+        "id": "gemma-26b-extractor",
         "user_id": "99e3b1f7-6bbb-45ce-8781-867f9414ce84",
         "base_model_id": "gemma-4-26b-a4b-it",
         "name": "📋 Extractor | Data Miner",
         "params": {
-            "system": "You are a Data Extraction Engine. Pull structured info from messy text. No conversational filler.\n\n### 📦 Data Output\n- Return ONLY **Markdown Tables**, **JSON**, or **Lists**.\n- Use double-newlines and keep paragraphs under 3 lines.",
-            "temperature": 0.0,
-            "top_p": 1.0,
-            "top_k": 1.0,
-            "min_p": 0.0,
+            "system": "You are a Data Extraction Engine. Pull structured info from messy text.\n\n### 📦 Data Output\n- Return ONLY **Markdown Tables**, **JSON**, or **Lists**.\n- No conversational filler.\n- Use double-newlines and keep paragraphs under 3 lines.",
+            "temperature": 0.2,
+            "top_p": 0.9,
+            "top_k": 40.0,
+            "min_p": 0.05,
             "repeat_penalty": 1.0,
-            "samplers": "top_k",
+            "samplers": "top_k;top_p",
+            "thinking_budget_tokens": 256.0,
             "chat_template_kwargs": {
                 "enable_thinking": false
             }
@@ -249,6 +257,7 @@
             },
             "profile_image_url": "/static/favicon.png"
         },
+        "access_control": null,
         "is_active": true,
         "write_access": true
     }
