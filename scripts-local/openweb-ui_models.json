@@ -1,0 +1,153 @@
+[
+    {
+        "id": "gemma4-fast",
+        "user_id": "99e3b1f7-6bbb-45ce-8781-867f9414ce84",
+        "base_model_id": "gemma-4-26b-a4b-it",
+        "name": "⚡ Fast | Direct Assistant",
+        "params": {
+            "system": "You are a high-speed Gemma-4 assistant. Perform a rapid factual double-check using your budget before answering.\n\n## 📝 Summary\n- Use **topic-relevant emojis** as visual anchors for headers.\n- Deliver immediate, high-density facts with double-newlines between paragraphs.\n- Use ✅ for verified claims and `---` for section breaks.",
+            "temperature": 0.5,
+            "top_p": 0.95,
+            "top_k": 50,
+            "min_p": 0.02,
+            "xtc_probability": 0.1,
+            "xtc_threshold": 0.1,
+            "repeat_penalty": 1.05,
+            "samplers": "dry;top_k;top_p;xtc;min_p;temperature",
+            "thinking_budget_tokens": 500,
+            "dry_multiplier": 0.5,
+            "dry_base": 1.75,
+            "dry_allowed_length": 2,
+            "dry_penalty_last_n": 4096
+        },
+        "meta": {
+            "profile_image_url": "/static/favicon.png",
+            "description": "Snap-response with high-speed factual verification.",
+            "capabilities": {
+                "file_context": true, "vision": true, "file_upload": true, "web_search": true, "status_updates": true, "builtin_tools": true
+            }
+        },
+        "is_active": true,
+        "write_access": true
+    },
+    {
+        "id": "gemma4-coder",
+        "user_id": "99e3b1f7-6bbb-45ce-8781-867f9414ce84",
+        "base_model_id": "gemma-4-26b-a4b-it",
+        "name": "🚀 Coder | Senior Architect",
+        "params": {
+            "system": "You are a Lead Software Engineer. MANDATORY: Perform a line-by-line mental dry-run of all code logic in your thoughts.\n\n## 🏗️ Architectural Design\n- Describe the pattern and logic flow using **technical emojis** (🏗️, 🛡️, ⚙️).\n- Provide production-ready, syntax-highlighted code blocks.\n- Use `---` dividers and focus on security (⚠️), time complexity, and memory efficiency (🚀).",
+            "temperature": 0.4,
+            "top_p": 0.9,
+            "top_k": 50,
+            "min_p": 0.02,
+            "xtc_probability": 0.1,
+            "xtc_threshold": 0.1,
+            "repeat_penalty": 1.08,
+            "samplers": "dry;top_k;top_p;xtc;min_p;temperature",
+            "thinking_budget_tokens": 1500,
+            "dry_multiplier": 0.8,
+            "dry_base": 1.75,
+            "dry_allowed_length": 2,
+            "dry_penalty_last_n": 4096
+        },
+        "meta": {
+            "profile_image_url": "/static/favicon.png",
+            "description": "Deterministic code generation with deep logic dry-runs.",
+            "capabilities": {
+                "file_context": true, "vision": true, "file_upload": true, "web_search": true, "builtin_tools": true
+            }
+        },
+        "is_active": true,
+        "write_access": true
+    },
+    {
+        "id": "gemma4-pro",
+        "user_id": "99e3b1f7-6bbb-45ce-8781-867f9414ce84",
+        "base_model_id": "gemma-4-26b-a4b-it",
+        "name": "🧠 Pro | Thinker",
+        "params": {
+            "system": "You are an Elite Analytical Agent. REQUIRED: Explore 3+ distinct reasoning paths in your thoughts.\n\n## 📝 Executive Summary\n- Provide a concise, high-level synthesis of the findings.\n\n## 🔬 Deep Analysis\n- Use **contextual emojis** at the start of every header.\n- Contrast perspectives using 🆚 and analyze trade-offs with ⚖️.\n- Use `---` dividers and LaTeX ($inline$, $$block$$) for any technical notations.",
+            "temperature": 0.5,
+            "top_p": 0.95,
+            "top_k": 50,
+            "min_p": 0.01,
+            "xtc_probability": 0.1,
+            "xtc_threshold": 0.1,
+            "repeat_penalty": 1.05,
+            "samplers": "dry;top_k;top_p;xtc;min_p;temperature",
+            "thinking_budget_tokens": 3000,
+            "dry_multiplier": 0.5,
+            "dry_base": 1.75,
+            "dry_allowed_length": 2,
+            "dry_penalty_last_n": 4096
+        },
+        "meta": {
+            "profile_image_url": "/static/favicon.png",
+            "description": "Multi-perspective synthesis with scientific report formatting.",
+            "capabilities": {
+                "file_context": true, "vision": true, "file_upload": true, "web_search": true, "builtin_tools": true
+            }
+        },
+        "is_active": true,
+        "write_access": true
+    },
+    {
+        "id": "gemma4-thinker",
+        "user_id": "99e3b1f7-6bbb-45ce-8781-867f9414ce84",
+        "base_model_id": "gemma-4-26b-a4b-it",
+        "name": "🔬Pro | Research Analyst",
+        "params": {
+            "system": "You are a Senior Research Analyst. MANDATORY: Perform exhaustive root-cause verification and stress-testing in your thoughts.\n\n## 🔬 Research Report\n- Use **intelligent visual anchors** (emojis) for all sections and data findings.\n- Use Markdown tables (📊) for multi-variable data and 📈 for trends.\n- Label results: ✅ Verified · ⚠️ Speculative. Use `---` dividers between major chapters.",
+            "temperature": 0.4,
+            "top_p": 0.95,
+            "top_k": 50,
+            "min_p": 0.01,
+            "xtc_probability": 0.1,
+            "xtc_threshold": 0.1,
+            "repeat_penalty": 1.08,
+            "samplers": "dry;top_k;top_p;xtc;min_p;temperature",
+            "thinking_budget_tokens": 6000,
+            "dry_multiplier": 0.5,
+            "dry_base": 1.75,
+            "dry_allowed_length": 2,
+            "dry_penalty_last_n": 4096
+        },
+        "meta": {
+            "profile_image_url": "/static/favicon.png",
+            "description": "Maximum logical depth for exhaustive frontier-level research.",
+            "capabilities": {
+                "file_context": true, "vision": true, "file_upload": true, "web_search": true, "image_generation": true, "code_interpreter": true
+            }
+        },
+        "is_active": true,
+        "write_access": true
+    },
+    {
+        "id": "gemma4-autocomplete",
+        "user_id": "99e3b1f7-6bbb-45ce-8781-867f9414ce84",
+        "base_model_id": "gemma-4-26b-a4b-it",
+        "name": "⌨️ Autocomplete | FIM",
+        "params": {
+            "temperature": 0.2,
+            "top_p": 0.9,
+            "top_k": 40,
+            "min_p": 0.05,
+            "repeat_penalty": 1.0,
+            "samplers": "top_k;top_p;min_p;temperature",
+            "thinking_budget_tokens": 0,
+            "chat_template_kwargs": {
+                "enable_thinking": false
+            }
+        },
+        "meta": {
+            "profile_image_url": "/static/favicon.png",
+            "description": "Instant FIM autocomplete for VS Code. Thinking disabled.",
+            "capabilities": {
+                "file_context": true
+            }
+        },
+        "is_active": true,
+        "write_access": true
+    }
+]

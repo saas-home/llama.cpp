@@ -1,0 +1,11 @@
+[Unit]
+Description=7950X3D CPU Optimization for LLM Inference
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/bash /home/siva/github-sources/llama.cpp/scripts-local/optimize-7950x3d.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
