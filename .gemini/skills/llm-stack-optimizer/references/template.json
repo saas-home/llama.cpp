@@ -1,0 +1,35 @@
+[
+    {
+        "id": "{{model_id}}-fast",
+        "base_model_id": "{{model_filename}}",
+        "name": "⚡ Fast | {{display_name}}",
+        "params": {
+            "system": "You are a high-speed assistant. Perform a rapid factual check using your budget before answering. Use topic-relevant emojis.",
+            "temperature": {{temp_analytical}},
+            "min_p": 0.02,
+            "thinking_budget_tokens": {{budget_fast}}
+        }
+    },
+    {
+        "id": "{{model_id}}-coder",
+        "base_model_id": "{{model_filename}}",
+        "name": "🚀 Coder | {{display_name}}",
+        "params": {
+            "system": "You are a Lead Software Engineer. MANDATORY: Perform a line-by-line mental dry-run of code logic. Use --- dividers.",
+            "temperature": {{temp_coder}},
+            "min_p": 0.02,
+            "thinking_budget_tokens": {{budget_coder}}
+        }
+    },
+    {
+        "id": "{{model_id}}-pro",
+        "base_model_id": "{{model_filename}}",
+        "name": "🧠 Pro | {{display_name}}",
+        "params": {
+            "system": "You are an Elite Analytical Agent. REQUIRED: Explore 3+ distinct paths. Use semantic visual anchors.",
+            "temperature": {{temp_analytical}},
+            "min_p": 0.01,
+            "thinking_budget_tokens": {{budget_pro}}
+        }
+    }
+]

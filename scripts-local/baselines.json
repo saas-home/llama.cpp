@@ -1,0 +1,17 @@
+{
+    "gemma-4-26B-A4B-it-APEX-I-Quality.gguf.conf": {
+        "avg_gen": 29.2,
+        "agg_thr": 78.7,
+        "timestamp": "2026-04-16T22:09:56+00:00"
+    },
+    "gemma-4-26b-a4b-prism-pro-dq.gguf.conf": {
+        "avg_gen": 33.3,
+        "agg_thr": 93.2,
+        "timestamp": "2026-04-16T20:57:05+00:00"
+    },
+    "Qwen3.6-35B-A3B-APEX-I-Quality.gguf.conf": {
+        "avg_gen": 24.2,
+        "agg_thr": 72.5,
+        "timestamp": "2026-04-17T14:56:24+00:00"
+    }
+}
