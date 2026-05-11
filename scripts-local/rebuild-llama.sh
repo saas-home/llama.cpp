@@ -85,21 +85,21 @@ CONTEXT_SHIFT="true"
 SLOT_SAVE_PATH="/home/siva/.cache/llama-slots"
 
 # Sampling & Logic
-TEMP=0.4
-MIN_P=0.02
-XTC_PROBABILITY=0.1
-XTC_THRESHOLD=0.1
-TOP_P=0.95
-TOP_K=50
-REPEAT_PENALTY=1.1
-REPEAT_LAST_N=64
-PRESENCE_PENALTY=0.0
+TEMP=""
+MIN_P=""
+XTC_PROBABILITY=""
+XTC_THRESHOLD=""
+TOP_P=""
+TOP_K=""
+REPEAT_PENALTY=""
+REPEAT_LAST_N=""
+PRESENCE_PENALTY=""
 
 # DRY Sampler
-DRY_MULTIPLIER=0.8
-DRY_BASE=1.75
-DRY_ALLOWED_LENGTH=2
-DRY_PENALTY_LAST_N=4096
+DRY_MULTIPLIER=""
+DRY_BASE=""
+DRY_ALLOWED_LENGTH=""
+DRY_PENALTY_LAST_N=""
 
 # Reasoning / Thinking
 REASONING="auto"
@@ -107,15 +107,25 @@ REASONING_FORMAT="deepseek"
 REASONING_BUDGET=-1
 REASONING_BUDGET_MESSAGE=""
 JINJA="${JINJA:-false}"
+JINJA_KWARGS="${JINJA_KWARGS:-}"
 
-SAMPLERS="dry;top_k;top_p;xtc;min_p;temperature"
+SAMPLERS=""
 HOST="0.0.0.0"
 PORT=8080
+LOG_DISABLE="${LOG_DISABLE:-true}"
 SLEEP_IDLE_SECONDS=300
 
 # Model Persistence & Mapping
 MLOCK="${MLOCK:-false}"
 MMAP="${MMAP:-true}"
+MMPRJ_OFFLOAD="${MMPRJ_OFFLOAD:-true}"
+
+# DRY Sampler
+DRY_MULTIPLIER=""
+DRY_BASE=""
+DRY_ALLOWED_LENGTH=""
+DRY_PENALTY_LAST_N=""
+DRY_SEQUENCE_BREAKERS="${DRY_SEQUENCE_BREAKERS:-}"
 
 # 1. Environment & Base Paths
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -223,62 +233,80 @@ if [[ "$DEPLOY" == true ]]; then
 
     # Build ExecStart command array for robust generation
     CMD=("$LLAMA_DIR/build/bin/llama-server")
-    CMD+=("--model $MODEL_PATH")
-    [[ -n "$MODEL_ALIAS" ]] && CMD+=("--alias $MODEL_ALIAS")
-    CMD+=("--path $LLAMA_DIR/tools/server/public")
-    [[ -n "$MMPRJ_PATH" ]] && CMD+=("--mmproj $MMPRJ_PATH")
-    CMD+=("--n-gpu-layers $N_GPU_LAYERS")
-    CMD+=("--n-cpu-moe $N_CPU_MOE")
-    CMD+=("--cache-type-k $CACHE_TYPE_K")
-    CMD+=("--cache-type-v $CACHE_TYPE_V")
+    CMD+=("--model" "$MODEL_PATH")
+    [[ -n "$MODEL_ALIAS" ]] && CMD+=("--alias" "$MODEL_ALIAS")
+    CMD+=("--path" "$LLAMA_DIR/tools/server/public")
+    [[ -n "$MMPRJ_PATH" ]] && CMD+=("--mmproj" "$MMPRJ_PATH")
+    [[ "$MMPRJ_OFFLOAD" == "false" ]] && CMD+=("--no-mmproj-offload")
+    CMD+=("--n-gpu-layers" "$N_GPU_LAYERS")
+    CMD+=("--n-cpu-moe" "$N_CPU_MOE")
+    CMD+=("--cache-type-k" "$CACHE_TYPE_K")
+    CMD+=("--cache-type-v" "$CACHE_TYPE_V")
     [[ "$MLOCK" == "true" ]] && CMD+=("--mlock")
     [[ "$MMAP" == "false" ]] && CMD+=("--no-mmap")
-    CMD+=("--parallel $PARALLEL")
-    CMD+=("--cache-ram $CACHE_RAM")
-    CMD+=("--cache-reuse $CACHE_REUSE")
+    CMD+=("--parallel" "$PARALLEL")
+    CMD+=("--cache-ram" "$CACHE_RAM")
+    CMD+=("--cache-reuse" "$CACHE_REUSE")
     [[ "${KV_UNIFIED:-}" == "true" ]] && CMD+=("--kv-unified")
     [[ "${CLEAR_IDLE:-}" == "true" ]] && CMD+=("--cache-idle-slots")
     [[ "${CONTEXT_SHIFT:-}" == "true" ]] && CMD+=("--context-shift")
-    CMD+=("--slot-save-path $SLOT_SAVE_PATH")
+    CMD+=("--slot-save-path" "$SLOT_SAVE_PATH")
     CMD+=("--cont-batching")
-    CMD+=("--threads $THREADS")
-    CMD+=("--threads-batch $THREADS_BATCH")
-    CMD+=("--threads-http $THREADS_HTTP")
-    CMD+=("--prio $PRIORITY")
-    CMD+=("--prio-batch $PRIORITY_BATCH")
-    CMD+=("--numa isolate")
-    CMD+=("--flash-attn on")
-    CMD+=("--ctx-size $CTX_SIZE")
-    CMD+=("--batch-size $BATCH_SIZE")
-    CMD+=("--ubatch-size $UBATCH_SIZE")
-    CMD+=("--reasoning $REASONING")
-    CMD+=("--reasoning-format $REASONING_FORMAT")
-    CMD+=("--reasoning-budget $REASONING_BUDGET")
-    [[ -n "$REASONING_BUDGET_MESSAGE" ]] && CMD+=("--reasoning-budget-message \"$REASONING_BUDGET_MESSAGE\"")
+    CMD+=("--threads" "$THREADS")
+    CMD+=("--threads-batch" "$THREADS_BATCH")
+    CMD+=("--threads-http" "$THREADS_HTTP")
+    CMD+=("--prio" "$PRIORITY")
+    CMD+=("--prio-batch" "$PRIORITY_BATCH")
+    CMD+=("--numa" "isolate")
+    CMD+=("--flash-attn" "on")
+    CMD+=("--ctx-size" "$CTX_SIZE")
+    CMD+=("--batch-size" "$BATCH_SIZE")
+    CMD+=("--ubatch-size" "$UBATCH_SIZE")
+    CMD+=("--reasoning" "$REASONING")
+    CMD+=("--reasoning-format" "$REASONING_FORMAT")
+    CMD+=("--reasoning-budget" "$REASONING_BUDGET")
+    [[ -n "$REASONING_BUDGET_MESSAGE" ]] && CMD+=("--reasoning-budget-message" "$REASONING_BUDGET_MESSAGE")
     [[ "$JINJA" == "true" ]] && CMD+=("--jinja")
-    CMD+=("--temp $TEMP")
-    CMD+=("--min-p $MIN_P")
-    CMD+=("--xtc-probability $XTC_PROBABILITY")
-    CMD+=("--xtc-threshold $XTC_THRESHOLD")
-    CMD+=("--top-p $TOP_P")
-    CMD+=("--top-k $TOP_K")
-    CMD+=("--repeat-last-n $REPEAT_LAST_N")
-    CMD+=("--repeat-penalty $REPEAT_PENALTY")
-    CMD+=("--presence-penalty $PRESENCE_PENALTY")
-    CMD+=("--dry-multiplier $DRY_MULTIPLIER")
-    CMD+=("--dry-base $DRY_BASE")
-    CMD+=("--dry-allowed-length $DRY_ALLOWED_LENGTH")
-    CMD+=("--dry-penalty-last-n $DRY_PENALTY_LAST_N")
-    CMD+=("--samplers \"$SAMPLERS\"")
-    CMD+=("--host $HOST")
-    CMD+=("--port $PORT")
-    CMD+=("--log-disable")
+    [[ -n "${JINJA_KWARGS:-}" ]] && CMD+=("--chat-template-kwargs" "$JINJA_KWARGS")
+    
+    [[ -n "$TEMP" ]] && CMD+=("--temp" "$TEMP")
+    [[ -n "$MIN_P" ]] && CMD+=("--min-p" "$MIN_P")
+    [[ -n "$XTC_PROBABILITY" ]] && CMD+=("--xtc-probability" "$XTC_PROBABILITY")
+    [[ -n "$XTC_THRESHOLD" ]] && CMD+=("--xtc-threshold" "$XTC_THRESHOLD")
+    [[ -n "$TOP_P" ]] && CMD+=("--top-p" "$TOP_P")
+    [[ -n "$TOP_K" ]] && CMD+=("--top-k" "$TOP_K")
+    [[ -n "$REPEAT_LAST_N" ]] && CMD+=("--repeat-last-n" "$REPEAT_LAST_N")
+    [[ -n "$REPEAT_PENALTY" ]] && CMD+=("--repeat-penalty" "$REPEAT_PENALTY")
+    [[ -n "$PRESENCE_PENALTY" ]] && CMD+=("--presence-penalty" "$PRESENCE_PENALTY")
+    [[ -n "$DRY_MULTIPLIER" ]] && CMD+=("--dry-multiplier" "$DRY_MULTIPLIER")
+    [[ -n "$DRY_BASE" ]] && CMD+=("--dry-base" "$DRY_BASE")
+    [[ -n "$DRY_ALLOWED_LENGTH" ]] && CMD+=("--dry-allowed-length" "$DRY_ALLOWED_LENGTH")
+    [[ -n "$DRY_PENALTY_LAST_N" ]] && CMD+=("--dry-penalty-last-n" "$DRY_PENALTY_LAST_N")
+    
+    # Handle multiple sequence breakers correctly
+    if [[ -n "${DRY_SEQUENCE_BREAKERS:-}" ]]; then
+        for breaker in $DRY_SEQUENCE_BREAKERS; do
+            # Handle escaped characters like \n
+            fixed_breaker=$(echo -e "$breaker")
+            CMD+=("--dry-sequence-breaker" "$fixed_breaker")
+        done
+    fi
+
+    [[ -n "$SAMPLERS" ]] && CMD+=("--samplers" "$SAMPLERS")
+    CMD+=("--host" "$HOST")
+    CMD+=("--port" "$PORT")
+    [[ "$LOG_DISABLE" == "true" ]] && CMD+=("--log-disable")
     [[ -n "${EXTRA_ARGS:-}" ]] && CMD+=("${EXTRA_ARGS:-}")
     CMD+=("--metrics")
 
-    # Join array with backslashes
-    EXEC_START=$(printf "  %s \\\\\n" "${CMD[@]}")
-    EXEC_START=${EXEC_START% \\\\$'\n'} # Remove last backslash
+    # Construct the ExecStart string with robust double-quoting
+    EXEC_START=""
+    for arg in "${CMD[@]}"; do
+        # Wrap everything in double quotes and escape internal double quotes and backslashes
+        # This prevents systemd from misinterpreting spaces or special JSON chars
+        escaped=$(echo "$arg" | sed 's/["\\]/\\&/g')
+        EXEC_START+="\"$escaped\" "
+    done
 
     cat > /tmp/$SERVICE_NAME << EOF
 
