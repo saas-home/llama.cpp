@@ -63,6 +63,8 @@ THREADS_BATCH=16
 THREADS_HTTP=4
 PRIORITY=2
 PRIORITY_BATCH=1
+NUMA="isolate"
+FLASH_ATTN="on"
 
 # GPU & Memory
 N_GPU_LAYERS=999
@@ -206,7 +208,7 @@ if [[ "$BUILD" == true ]]; then
     cmake -B build -S . -G Ninja \
       -DCMAKE_BUILD_TYPE=Release \
       "${CUDA_ARGS[@]}" \
-      -DCMAKE_CUDA_HOST_COMPILER=/usr/bin/g++-14 \
+      -DCMAKE_CUDA_HOST_COMPILER=/usr/bin/g++ \
       -DGGML_NATIVE=ON \
       -DGGML_AVX512=ON \
       -DGGML_AVX512_VNNI=ON \
@@ -218,7 +220,8 @@ if [[ "$BUILD" == true ]]; then
       -DGGML_CUDA_NO_PEER_COPY=OFF \
       -DGGML_CUDA_PEER_MAX_BATCH_SIZE=128 \
       -DGGML_CUDA_COMPRESSION_MODE=speed \
-      -DGGML_CUDA_NO_VMM=ON \
+      -DGGML_CUDA_NO_VMM=OFF \
+      -DGGML_CCACHE=ON \
       -DGGML_CURL=ON \
       -DGGML_OPENMP=ON \
       -DCMAKE_CUDA_ARCHITECTURES="89"
@@ -235,7 +238,7 @@ if [[ "$DEPLOY" == true ]]; then
     CMD=("$LLAMA_DIR/build/bin/llama-server")
     CMD+=("--model" "$MODEL_PATH")
     [[ -n "$MODEL_ALIAS" ]] && CMD+=("--alias" "$MODEL_ALIAS")
-    CMD+=("--path" "$LLAMA_DIR/tools/server/public")
+    CMD+=("--path" "$LLAMA_DIR/build/tools/ui/dist")
     [[ -n "$MMPRJ_PATH" ]] && CMD+=("--mmproj" "$MMPRJ_PATH")
     [[ "$MMPRJ_OFFLOAD" == "false" ]] && CMD+=("--no-mmproj-offload")
     CMD+=("--n-gpu-layers" "$N_GPU_LAYERS")
@@ -257,8 +260,8 @@ if [[ "$DEPLOY" == true ]]; then
     CMD+=("--threads-http" "$THREADS_HTTP")
     CMD+=("--prio" "$PRIORITY")
     CMD+=("--prio-batch" "$PRIORITY_BATCH")
-    CMD+=("--numa" "isolate")
-    CMD+=("--flash-attn" "on")
+    CMD+=("--numa" "$NUMA")
+    CMD+=("--flash-attn" "$FLASH_ATTN")
     CMD+=("--ctx-size" "$CTX_SIZE")
     CMD+=("--batch-size" "$BATCH_SIZE")
     CMD+=("--ubatch-size" "$UBATCH_SIZE")
@@ -296,16 +299,24 @@ if [[ "$DEPLOY" == true ]]; then
     CMD+=("--host" "$HOST")
     CMD+=("--port" "$PORT")
     [[ "$LOG_DISABLE" == "true" ]] && CMD+=("--log-disable")
-    [[ -n "${EXTRA_ARGS:-}" ]] && CMD+=("${EXTRA_ARGS:-}")
+    # Add EXTRA_ARGS with word splitting to support multiple flags
+    if [[ -n "${EXTRA_ARGS:-}" ]]; then
+        for arg in $EXTRA_ARGS; do
+            CMD+=("$arg")
+        done
+    fi
     CMD+=("--metrics")
 
-    # Construct the ExecStart string with robust double-quoting
+    # Construct the ExecStart string
     EXEC_START=""
     for arg in "${CMD[@]}"; do
-        # Wrap everything in double quotes and escape internal double quotes and backslashes
-        # This prevents systemd from misinterpreting spaces or special JSON chars
-        escaped=$(echo "$arg" | sed 's/["\\]/\\&/g')
-        EXEC_START+="\"$escaped\" "
+        if [[ "$arg" =~ [^a-zA-Z0-9.,/_=-] ]]; then
+            # Wrap in double quotes and escape internal double quotes and backslashes
+            escaped=$(echo "$arg" | sed 's/["\\]/\\&/g')
+            EXEC_START+="\"$escaped\" "
+        else
+            EXEC_START+="$arg "
+        fi
     done
 
     cat > /tmp/$SERVICE_NAME << EOF
@@ -404,3 +415,4 @@ EOF
         fi
     fi
 fi
+.
