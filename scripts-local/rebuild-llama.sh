@@ -415,4 +415,5 @@ EOF
         fi
     fi
 fi
-.
+
+exit 0
