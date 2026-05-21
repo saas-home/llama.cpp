@@ -51,9 +51,8 @@ if [[ -d "/usr/local/cuda/bin" ]]; then
 fi
 
 MODEL_PATH="/home/siva/models/gemma-4-26B-A4B-it/Ex0bit/mythos-26b-a4b-prism-pro-dq.gguf"
-MMPRJ_PATH="/home/siva/models/gemma-4-26B-A4B-it/Ex0bit/mmproj-mythos-26b-a4b-prism-pro.gguf"
+MMPRJ_PATH="/home/siva/models/gemma-4-26B-A4B-it/Ex0bit/mmprj-mythos-26b-a4b-prism-pro.gguf"
 MODEL_ALIAS="${MODEL_ALIAS:-}"
-SERVICE_NAME="llama-server.service"
 
 # CPU & Scheduling Optimization
 # Full V-Cache CCD Focus: Cores 0-7 + SMT 16-23.
@@ -102,6 +101,7 @@ DRY_MULTIPLIER=""
 DRY_BASE=""
 DRY_ALLOWED_LENGTH=""
 DRY_PENALTY_LAST_N=""
+DRY_SEQUENCE_BREAKERS="${DRY_SEQUENCE_BREAKERS:-}"
 
 # Reasoning / Thinking
 REASONING="auto"
@@ -121,13 +121,6 @@ SLEEP_IDLE_SECONDS=300
 MLOCK="${MLOCK:-false}"
 MMAP="${MMAP:-true}"
 MMPRJ_OFFLOAD="${MMPRJ_OFFLOAD:-true}"
-
-# DRY Sampler
-DRY_MULTIPLIER=""
-DRY_BASE=""
-DRY_ALLOWED_LENGTH=""
-DRY_PENALTY_LAST_N=""
-DRY_SEQUENCE_BREAKERS="${DRY_SEQUENCE_BREAKERS:-}"
 
 # 1. Environment & Base Paths
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -171,7 +164,7 @@ fi
 
 # =========================================================
 
-echo "=== llama.cpp Rebuild Script (Gemma-4 Q6_K Speed Optimized) ==="
+echo "=== llama.cpp Rebuild Script ==="
 
 # Auto-detect llama.cpp directory
 if [[ -n "${LLAMA_CPP_DIR:-}" ]]; then
@@ -319,7 +312,8 @@ if [[ "$DEPLOY" == true ]]; then
         fi
     done
 
-    cat > /tmp/$SERVICE_NAME << EOF
+    TMPUNIT=$(mktemp /tmp/llama-unit.XXXXXX)
+    cat > "$TMPUNIT" << EOF
 
 [Unit]
 Description=Llama.cpp Server - Config: $CONFIG_NAME
@@ -340,7 +334,8 @@ RestartSec=5
 WantedBy=multi-user.target
 EOF
 
-    sudo cp /tmp/$SERVICE_NAME /etc/systemd/system/$SERVICE_NAME
+    sudo cp "$TMPUNIT" "/etc/systemd/system/$SERVICE_NAME"
+    rm -f "$TMPUNIT"
     sudo systemctl daemon-reload
     sudo systemctl enable $SERVICE_NAME
     sudo systemctl restart $SERVICE_NAME
