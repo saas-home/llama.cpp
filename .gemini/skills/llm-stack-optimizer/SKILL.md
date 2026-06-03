@@ -46,8 +46,8 @@ This skill performs deep research and analysis to generate a perfectly tuned con
         - **Pristine History**: Set `REASONING_BUDGET_MESSAGE=""` (empty) to prevent non-native filler from disrupting recursive logic.
         - **Watchdog**: Set a global `REASONING_BUDGET=2048` to prevent infinite thinking loops.
 - **OpenWeb-UI Profiles**: 
-    - **Automation**: Do NOT manually create JSON profiles. Execute `python3 scripts-local/generate-ui-profiles.py` after saving the `.conf` file to generate all 8 standard personas (FIM, Coder, Pro, etc.).
-    - **Standards**: The script automatically enforces the **10/10 UI Standard** (H3 headers, emoji anchoring, float types).
+    - **Manual Configuration**: Create or edit OpenWeb-UI JSON profiles manually as needed.
+    - **Standards**: Ensure manual profiles strictly adhere to the **10/10 UI Standard** (H3 headers, emoji anchoring, float types).
     - **Recursive Logic**: Ensure high-logic personas (Pro/Coder/Research) instruct the model to "recursively validate against previous reasoning traces."
     - **Tool Calling**: For Qwen 3.6 Coder models, ensure the persona uses the XML-based `qwen3_coder` format (detected automatically by modern llama-server).
 

@@ -6,7 +6,6 @@ This file contains foundational mandates, architectural patterns, and hard-won l
 
 - **Deployment Script**: Always use `./scripts-local/rebuild-llama.sh [CONFIG_FILE]` to deploy or update the server. Never launch `llama-server` manually without the wrapper script.
   - **VRAM Pre-flight**: Automatically checks if your config fits in the 16GB RTX 4070 Ti Super before starting. Aborts if >15.5GB.
-  - **Manual UI Sync**: OpenWeb-UI JSON profiles are no longer regenerated automatically. Use the `--generate-ui` flag in `rebuild-llama.sh` to trigger updates.
 - **Active Configurations**:
   - `qwen-3.6-35b-a3b.conf`: APEX-I-Balanced (Port 8080 | CCD0 focus).
   - `gemma-4-26b-a4b.conf`: PRISM-PRO-DQ (Port 8081 | CCD1 focus).

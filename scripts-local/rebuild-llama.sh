@@ -6,7 +6,6 @@ set -euo pipefail
 # ./rebuild-llama.sh [config]             → override with specific .conf
 # ./rebuild-llama.sh [config] --build     → build from source
 # ./rebuild-llama.sh [config] --bench     → run benchmark
-# ./rebuild-llama.sh [config] --generate-ui → regenerate OpenWeb-UI profiles
 # ./rebuild-llama.sh [config] --no-deploy   → stop and build, but do not deploy/restart
 # ============================================================
 
@@ -16,7 +15,6 @@ BENCH_ONLY=false
 BENCH_COUNT=1
 BENCH_PARALLEL=1
 BENCH_BUDGET=500
-GEN_UI=false
 DEPLOY=true
 CONFIG_OVERRIDE=""
 
@@ -136,7 +134,6 @@ for arg in "$@"; do
         --bench-count=*) BENCH_COUNT="${arg#*=}" ;;
         --bench-parallel=*) BENCH_PARALLEL="${arg#*=}" ;;
         --bench-budget=*) BENCH_BUDGET="${arg#*=}" ;;
-        --generate-ui) GEN_UI=true ;;
         --no-deploy) DEPLOY=false ;;
         --service=*) SERVICE_NAME="${arg#*=}" ;;
         *.conf) CONFIG_OVERRIDE="$arg" ;;
@@ -194,14 +191,16 @@ if [[ "$BUILD" == true ]]; then
     echo "🛠️ Building with maximum optimizations (CUDA 13.2 optimized)..."
     
     CUDA_ARGS=()
-    if [[ -x "/usr/local/cuda/bin/nvcc" ]]; then
+    if [[ -x "/usr/bin/nvcc" ]]; then
+        CUDA_ARGS+=("-DCMAKE_CUDA_COMPILER=/usr/bin/nvcc")
+    elif [[ -x "/usr/local/cuda/bin/nvcc" ]]; then
         CUDA_ARGS+=("-DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc")
     fi
 
     cmake -B build -S . -G Ninja \
       -DCMAKE_BUILD_TYPE=Release \
       "${CUDA_ARGS[@]}" \
-      -DCMAKE_CUDA_HOST_COMPILER=/usr/bin/g++ \
+      -DCMAKE_CUDA_HOST_COMPILER=/usr/bin/g++-13 \
       -DGGML_NATIVE=ON \
       -DGGML_AVX512=ON \
       -DGGML_AVX512_VNNI=ON \
@@ -343,11 +342,6 @@ EOF
     echo "✅ Service restarted."
 else
     echo "⏭️  Skipping deployment (--no-deploy mode)"
-fi
-
-if [[ "$GEN_UI" == true ]]; then
-    echo "🎨 Regenerating OpenWeb-UI profiles..."
-    python3 "$SCRIPT_DIR/generate-ui-profiles.py"
 fi
 
 echo "Binary path : $LLAMA_DIR/build/bin/llama-server"
