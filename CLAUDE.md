@@ -30,6 +30,8 @@ cmake --preset x64-linux-gcc-release
 cmake --build build-x64-linux-gcc-release
 ```
 
+CMake presets in `CMakePresets.json` cover Linux GCC (debug/release/reldbg, static), Windows MSVC/LLVM, SYCL, and Vulkan (Windows only). **CUDA is not preset-based** — enable manually with `-DGGML_CUDA=ON`.
+
 Key CMake options: `GGML_CUDA`, `GGML_METAL`, `GGML_VULKAN`, `GGML_HIP`, `GGML_SYCL`, `GGML_BLAS`, `GGML_NATIVE`, `GGML_STATIC`, `GGML_CUDA_PEER_MAX_BATCH_SIZE`.
 
 Output binaries: `build/bin/llama-*`, `build/bin/ggml-*`.
@@ -46,6 +48,11 @@ ctest --test-dir build --label-exclude gpu --output-on-failure   # skip GPU test
 
 Individual test: `./build/bin/test-<name>` (e.g., `./build/bin/test-chat`).
 
+Python tokenizer tests: `tests/test-tokenizer-0.py`, `tests/test-tokenizer-random.py`.
+Shell integration tests: `tests/test-tokenizer-0.sh`, `tests/test-lora-conversion-inference.sh`.
+
+Local benchmark scripts in `scripts-local/`: `bench-llama.py`, `bench-multi.py`, `save-baseline.sh`.
+
 ## Code Style
 
 - **clang-format** (clang-tools v15+): 4-space indent, column limit 120, `BraceWrapping.AfterCaseLabel: true`, `BreakBeforeBrices: Attach`
@@ -59,14 +66,15 @@ Individual test: `./build/bin/test-<name>` (e.g., `./build/bin/test-chat`).
 | Path | Contents |
 |------|----------|
 | `src/` | Core llama library implementation |
-| `src/models/` | Model-specific architecture implementations |
+| `src/models/` | Model-specific architecture implementations (132 models) |
 | `ggml/` | Tensor library (ggml), upstream dependency at `github.com/ggml-org/ggml` |
 | `include/llama.h` | Public C API header |
 | `common/` | Shared utilities (chat, sampling, jinja, peg-parser) |
-| `tools/` | CLI tools (server, cli, quantize, perplexity, bench) |
+| `tools/` | CLI tools (server, cli, quantize, bench, imatrix, gguf-split, tts, parser, tokenize, completion, rpc, ui, etc.) |
 | `tools/server/` | OpenAI-compatible HTTP server |
-| `tests/` | Test sources |
+| `tests/` | Test sources (C++ unit tests, Python tokenizer tests, shell integration tests) |
 | `conversion/` | Python model conversion scripts |
+| `scripts-local/` | Local workflow scripts (rebuild-llama.sh, sync-fork.sh, model .conf files) |
 
 ## Gotchas
 
@@ -87,6 +95,16 @@ Model conversion scripts (`conversion/*.py`) require Python >= 3.10 with torch, 
 ```bash
 pip install -e ".[dev]"  # via pyproject.toml
 ```
+
+## Local Workflow Scripts
+
+`scripts-local/` contains custom scripts for this environment:
+
+- `rebuild-llama.sh` — Build/deploy/restart cycle for llama services. Supports `--build`, `--bench`, `--no-deploy`, `--dry-run`, `--force` flags. Loads config from `.conf` files.
+- `sync-fork.sh` — Sync fork with upstream. Supports `--branch`, `--force`, `--dry-run`. Uses ff-only merge with autostash.
+- `.conf` files — Model service configurations (Qwen3.6-35B-A3B, Gemma-4 variants). Define SERVICE_NAME, MODEL_PATH, CUDA settings, context size, reasoning budgets, etc.
+- `bench-llama.py`, `bench-multi.py` — Benchmarking utilities.
+- `vram-linter.py` — VRAM usage validation.
 
 ## Useful References
 
