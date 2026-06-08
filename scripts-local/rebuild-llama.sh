@@ -42,12 +42,6 @@ if [[ -f /etc/lsb-release ]] && grep -q "Ubuntu" /etc/lsb-release; then
     fi
 fi
 
-# Ensure nvcc is in path
-if [[ ! -x "/usr/bin/nvcc" ]] && [[ -d "/usr/local/cuda/bin" ]]; then
-    export PATH="/usr/local/cuda/bin:$PATH"
-    export LD_LIBRARY_PATH="/usr/local/cuda/lib64:$LD_LIBRARY_PATH"
-fi
-
 MODEL_PATH="/home/siva/models/gemma-4-26B-A4B-it/Ex0bit/mythos-26b-a4b-prism-pro-dq.gguf"
 MMPRJ_PATH="/home/siva/models/gemma-4-26B-A4B-it/Ex0bit/mmprj-mythos-26b-a4b-prism-pro.gguf"
 MODEL_ALIAS="${MODEL_ALIAS:-}"
@@ -113,7 +107,6 @@ SAMPLERS=""
 HOST="0.0.0.0"
 PORT=8080
 LOG_DISABLE="${LOG_DISABLE:-true}"
-SLEEP_IDLE_SECONDS=300
 
 # Model Persistence & Mapping
 MLOCK="${MLOCK:-false}"
@@ -200,7 +193,7 @@ if [[ "$BUILD" == true ]]; then
 
     cmake -B build -S . -G Ninja \
       -DCMAKE_BUILD_TYPE=Release \
-      "${CUDA_ARGS[@]}" \
+      "${CUDA_ARGS[@]+"${CUDA_ARGS[@]}"}" \
       -DCMAKE_CUDA_HOST_COMPILER=/usr/bin/g++-13 \
       -DGGML_NATIVE=ON \
       -DGGML_AVX512=ON \
@@ -283,7 +276,7 @@ if [[ "$DEPLOY" == true ]]; then
     if [[ -n "${DRY_SEQUENCE_BREAKERS:-}" ]]; then
         for breaker in $DRY_SEQUENCE_BREAKERS; do
             # Handle escaped characters like \n
-            fixed_breaker=$(echo -e "$breaker")
+            fixed_breaker=$(printf '%b' "$breaker")
             CMD+=("--dry-sequence-breaker" "$fixed_breaker")
         done
     fi
@@ -337,8 +330,8 @@ EOF
     sudo cp "$TMPUNIT" "/etc/systemd/system/$SERVICE_NAME"
     rm -f "$TMPUNIT"
     sudo systemctl daemon-reload
-    sudo systemctl enable $SERVICE_NAME
-    sudo systemctl restart $SERVICE_NAME
+    sudo systemctl enable "$SERVICE_NAME"
+    sudo systemctl restart "$SERVICE_NAME"
 
     echo "✅ Service restarted."
 else
