@@ -43,7 +43,7 @@ if [[ -f /etc/lsb-release ]] && grep -q "Ubuntu" /etc/lsb-release; then
 fi
 
 # Ensure nvcc is in path
-if [[ -d "/usr/local/cuda/bin" ]]; then
+if [[ ! -x "/usr/bin/nvcc" ]] && [[ -d "/usr/local/cuda/bin" ]]; then
     export PATH="/usr/local/cuda/bin:$PATH"
     export LD_LIBRARY_PATH="/usr/local/cuda/lib64:$LD_LIBRARY_PATH"
 fi
@@ -193,6 +193,7 @@ if [[ "$BUILD" == true ]]; then
     CUDA_ARGS=()
     if [[ -x "/usr/bin/nvcc" ]]; then
         CUDA_ARGS+=("-DCMAKE_CUDA_COMPILER=/usr/bin/nvcc")
+        export PATH="/usr/bin:$PATH"
     elif [[ -x "/usr/local/cuda/bin/nvcc" ]]; then
         CUDA_ARGS+=("-DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc")
     fi
