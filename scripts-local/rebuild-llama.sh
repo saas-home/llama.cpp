@@ -76,6 +76,8 @@ KV_UNIFIED="true"
 CLEAR_IDLE="true"
 CONTEXT_SHIFT="true"
 SLOT_SAVE_PATH="/home/siva/.cache/llama-slots"
+# Set to "false" to force KV cache to CPU/RAM (model stays on GPU via --n-gpu-layers)
+KV_OFFLOAD="true"
 
 # Sampling & Logic
 TEMP=""
@@ -235,8 +237,9 @@ if [[ "$DEPLOY" == true ]]; then
     [[ "$MMAP" == "false" ]] && CMD+=("--no-mmap")
     CMD+=("--parallel" "$PARALLEL")
     CMD+=("--cache-ram" "$CACHE_RAM")
-    CMD+=("--cache-reuse" "$CACHE_REUSE")
+    [[ -n "$CACHE_REUSE" ]] && CMD+=("--cache-reuse" "$CACHE_REUSE")
     [[ "${KV_UNIFIED:-}" == "true" ]] && CMD+=("--kv-unified")
+    [[ "$KV_OFFLOAD" == "false" ]] && CMD+=("--no-kv-offload")
     [[ "${CLEAR_IDLE:-}" == "true" ]] && CMD+=("--cache-idle-slots")
     [[ "${CONTEXT_SHIFT:-}" == "true" ]] && CMD+=("--context-shift")
     CMD+=("--slot-save-path" "$SLOT_SAVE_PATH")
