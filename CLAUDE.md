@@ -101,7 +101,7 @@ pip install -e ".[dev]"  # via pyproject.toml
 `scripts-local/` contains custom scripts for this environment:
 
 - `rebuild-llama.sh` — Build/deploy/restart cycle for llama services. Supports `--build`, `--bench`, `--no-deploy`, `--dry-run`, `--force` flags. Loads config from `.conf` files.
-- `sync-fork.sh` — Sync fork with upstream. Supports `--branch`, `--force`, `--dry-run`. Uses ff-only merge with autostash.
+- `sync-fork.sh` — **Always use this script for upstream sync** (never manual git merge/rebase). Supports `--branch`, `--force`, `--dry-run`. Uses ff-only merge with autostash. Saves current branch, syncs master with upstream, rebases current branch on master, force-pushes.
 - `.conf` files — Model service configurations (Qwen3.6-35B-A3B, Gemma-4 variants). Define SERVICE_NAME, MODEL_PATH, CUDA settings, context size, reasoning budgets, etc.
 - `bench-llama.py`, `bench-multi.py` — Benchmarking utilities.
 - `vram-linter.py` — VRAM usage validation.
