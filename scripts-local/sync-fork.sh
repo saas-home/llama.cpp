@@ -107,7 +107,7 @@ fi
 print_header "Step 1: Synchronizing local $UPSTREAM_BRANCH with $UPSTREAM_REMOTE"
 
 # Check for uncommitted changes before switching
-if ! git diff-index --quiet HEAD --; then
+if [[ -n "$(git status --porcelain 2>/dev/null)" ]]; then
     print_error "Uncommitted changes detected. Stash or commit them before running sync."
     exit 1
 fi
