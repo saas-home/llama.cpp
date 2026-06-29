@@ -7,15 +7,13 @@
 # 1. Global Performance Governor
 cpupower frequency-set -g performance
 
-# 2. CCD0 Optimization (Cores 0-15: Logic/MoE Gating / V-Cache)
-# Use 'balance_performance' to maintain high L3 hit rates and stable clocks.
-for i in {0..15}; do
+# 2. CCD0 Optimization (Cores 0-7 + SMT 16-23: V-Cache)
+for i in {0..7} {16..23}; do
     echo "balance_performance" > /sys/devices/system/cpu/cpu$i/cpufreq/energy_performance_preference
 done
 
-# 3. CCD1 Optimization (Cores 16-31: Throughput/Generation / Frequency)
-# Use 'performance' to maximize raw clock speeds for prompt evaluation.
-for i in {16..31}; do
+# 3. CCD1 Optimization (Cores 8-15 + SMT 24-31: Frequency)
+for i in {8..15} {24..31}; do
     echo "performance" > /sys/devices/system/cpu/cpu$i/cpufreq/energy_performance_preference
 done
 
