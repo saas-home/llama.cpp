@@ -2,11 +2,12 @@
 set -euo pipefail
 
 # ====================== USAGE ==============================
-# ./rebuild-llama.sh                      → use script defaults
-# ./rebuild-llama.sh [config]             → override with specific .conf
-# ./rebuild-llama.sh [config] --build     → build from source
-# ./rebuild-llama.sh [config] --bench     → run benchmark
-# ./rebuild-llama.sh [config] --no-deploy   → stop and build, but do not deploy/restart
+# ./llama-rebuild-cachyos.sh                      -> use script defaults
+# ./llama-rebuild-cachyos.sh [config]             -> override with specific .conf
+# ./llama-rebuild-cachyos.sh [config] --build     -> build from source
+# ./llama-rebuild-cachyos.sh [config] --bench     -> run benchmark
+# ./llama-rebuild-cachyos.sh [config] --no-deploy   -> stop and build, but do not deploy/restart
+# ./llama-rebuild-cachyos.sh --install-deps       -> install dependencies only
 # ============================================================
 
 BUILD=false
@@ -16,31 +17,12 @@ BENCH_COUNT=1
 BENCH_PARALLEL=1
 BENCH_BUDGET=500
 DEPLOY=true
+INSTALL_DEPS=false
 CONFIG_OVERRIDE=""
 
 # --- Default Current Configuration (Mythos-26B-A4B-PRISM Optimized) ---
-# Optimized for: AMD 7950X3D | RTX 4070 Ti Super (16GB) | Ubuntu 26.04
+# Optimized for: AMD 7950X3D | RTX 4070 Ti Super (16GB) | CachyOS
 # Goal: Maximum Context (256K) with 4-slot stability.
-
-# 0. Dependency check for Ubuntu
-if [[ -f /etc/lsb-release ]] && grep -q "Ubuntu" /etc/lsb-release; then
-    echo "🔍 Checking for Ubuntu dependencies..."
-    DEPS=(build-essential cmake ninja-build git libcurl4-openssl-dev pkg-config)
-    # Only auto-install Ubuntu's nvidia-cuda-toolkit if NVIDIA's official toolkit isn't present
-    if [[ ! -x /usr/local/cuda/bin/nvcc ]]; then
-        DEPS+=(nvidia-cuda-toolkit)
-    fi
-    MISSING_DEPS=()
-    for dep in "${DEPS[@]}"; do
-        if ! dpkg -s "$dep" >/dev/null 2>&1; then
-            MISSING_DEPS+=("$dep")
-        fi
-    done
-    if [[ ${#MISSING_DEPS[@]} -gt 0 ]]; then
-        echo "📦 Installing missing dependencies: ${MISSING_DEPS[*]}"
-        sudo apt update && sudo apt install -y "${MISSING_DEPS[@]}"
-    fi
-fi
 
 MODEL_PATH="/home/siva/models/gemma-4-26B-A4B-it/Ex0bit/mythos-26b-a4b-prism-pro-dq.gguf"
 MMPRJ_PATH="/home/siva/models/gemma-4-26B-A4B-it/Ex0bit/mmprj-mythos-26b-a4b-prism-pro.gguf"
@@ -130,21 +112,61 @@ for arg in "$@"; do
         --bench-parallel=*) BENCH_PARALLEL="${arg#*=}" ;;
         --bench-budget=*) BENCH_BUDGET="${arg#*=}" ;;
         --no-deploy) DEPLOY=false ;;
+        --install-deps) INSTALL_DEPS=true ;;
         --service=*) SERVICE_NAME="${arg#*=}" ;;
         *.conf) CONFIG_OVERRIDE="$arg" ;;
     esac
 done
 
+# Reusable function for installing CachyOS/Arch dependencies
+install_cachyos_deps() {
+    echo "[CHECK] Checking for CachyOS / Arch dependencies..."
+    local -a DEPS=(base-devel cmake ninja git curl pkgconf python)
+    
+    # Check if nvcc exists. If not, add cuda to installation list
+    if [[ ! -x /opt/cuda/bin/nvcc ]] && [[ ! -x /usr/bin/nvcc ]]; then
+        DEPS+=(cuda)
+        echo "[CHECK] CUDA not found - adding cuda to install list"
+    fi
+    
+    local -a MISSING_DEPS=()
+    for dep in "${DEPS[@]}"; do
+        if [[ "$dep" == "base-devel" ]]; then
+            if ! pacman -Qq gcc >/dev/null 2>&1; then
+                MISSING_DEPS+=("base-devel")
+            fi
+        else
+            if ! pacman -Qq "$dep" >/dev/null 2>&1; then
+                MISSING_DEPS+=("$dep")
+            fi
+        fi
+    done
+    
+    if [[ ${#MISSING_DEPS[@]} -gt 0 ]]; then
+        echo "[INSTALL] Installing missing dependencies: ${MISSING_DEPS[*]}"
+        sudo pacman -S --needed --noconfirm "${MISSING_DEPS[@]}"
+        echo "[INSTALL] Dependencies installed successfully."
+    else
+        echo "[CHECK] All dependencies present."
+    fi
+}
+
+# If user requested --install-deps only, run and exit
+if [[ "$INSTALL_DEPS" == true ]]; then
+    install_cachyos_deps
+    exit 0
+fi
+
 if [[ -n "$CONFIG_OVERRIDE" ]]; then
     if [[ -f "$CONFIG_OVERRIDE" ]]; then
-        echo "📂 Overriding defaults with: $CONFIG_OVERRIDE"
+        echo "[INFO] Overriding defaults with: $CONFIG_OVERRIDE"
         source "$CONFIG_OVERRIDE"
         # --- VRAM Pre-flight Check ---
         if [[ -f "$SCRIPT_DIR/vram-linter.py" ]]; then
             python3 "$SCRIPT_DIR/vram-linter.py" "$CONFIG_OVERRIDE" || true
         fi
     else
-        echo "❌ Override config file not found: $CONFIG_OVERRIDE"
+        echo "[ERROR] Override config file not found: $CONFIG_OVERRIDE"
         exit 1
     fi
 fi
@@ -156,7 +178,7 @@ fi
 
 # =========================================================
 
-echo "=== llama.cpp Rebuild Script ==="
+echo "=== llama.cpp CachyOS Rebuild Script ==="
 
 # Auto-detect llama.cpp directory
 if [[ -n "${LLAMA_CPP_DIR:-}" ]]; then
@@ -171,19 +193,22 @@ cd "$LLAMA_DIR"
 LLAMA_DIR="$(pwd)"
 
 if [[ "$BENCH_ONLY" == true ]]; then
-    echo "⏭️  Skipping restart (--bench-only mode)"
+    echo "[INFO] Skipping restart (--bench-only mode)"
 else
 
 # 3. Graceful shutdown
-echo "🔄 Stopping service..."
+echo "[INFO] Stopping service..."
 sudo systemctl stop "$SERVICE_NAME" || true
 
 if [[ "$BUILD" == true ]]; then
-    # 4. Update to latest
+    # 4. Install dependencies if needed
+    install_cachyos_deps
+
+    # 5. Update to latest
     git pull || true
 
     # 6. Build with best optimizations
-    echo "🛠️ Building with maximum optimizations (CUDA 13.2 optimized)..."
+    echo "[BUILD] Building with maximum optimizations..."
     
     CUDA_ARGS=()
     if [[ -x "/opt/cuda/bin/nvcc" ]]; then
@@ -197,10 +222,23 @@ if [[ "$BUILD" == true ]]; then
         export PATH="/usr/local/cuda/bin:$PATH"
     fi
 
+    # Auto-detect CUDA Compiler Host Compiler (g++-15, g++-14, g++-13, g++)
+    CUDA_HOST_COMPILER=""
+    for cpp_ver in g++-15 g++-14 g++-13 g++; do
+        if CMD_PATH=$(which "$cpp_ver" 2>/dev/null); then
+            CUDA_HOST_COMPILER="$CMD_PATH"
+            break
+        fi
+    done
+
+    if [[ -n "$CUDA_HOST_COMPILER" ]]; then
+        echo "[BUILD] Using CUDA host compiler: $CUDA_HOST_COMPILER"
+        CUDA_ARGS+=("-DCMAKE_CUDA_HOST_COMPILER=$CUDA_HOST_COMPILER")
+    fi
+
     cmake -B build -S . -G Ninja \
       -DCMAKE_BUILD_TYPE=Release \
       "${CUDA_ARGS[@]+"${CUDA_ARGS[@]}"}" \
-      -DCMAKE_CUDA_HOST_COMPILER=/usr/bin/g++-13 \
       -DGGML_NATIVE=ON \
       -DGGML_AVX512=ON \
       -DGGML_AVX512_VNNI=ON \
@@ -223,7 +261,7 @@ fi
 
 if [[ "$DEPLOY" == true ]]; then
     # 7. Update systemd service
-    echo "📝 Updating systemd service: $SERVICE_NAME"
+    echo "[INFO] Updating systemd service: $SERVICE_NAME"
     CONFIG_NAME=$(basename "${CONFIG_OVERRIDE:-script_defaults}")
 
     # Build ExecStart command array for robust generation
@@ -282,7 +320,6 @@ if [[ "$DEPLOY" == true ]]; then
     # Handle multiple sequence breakers correctly
     if [[ -n "${DRY_SEQUENCE_BREAKERS:-}" ]]; then
         for breaker in $DRY_SEQUENCE_BREAKERS; do
-            # Handle escaped characters like \n
             fixed_breaker=$(printf '%b' "$breaker")
             CMD+=("--dry-sequence-breaker" "$fixed_breaker")
         done
@@ -292,7 +329,6 @@ if [[ "$DEPLOY" == true ]]; then
     CMD+=("--host" "$HOST")
     CMD+=("--port" "$PORT")
     [[ "$LOG_DISABLE" == "true" ]] && CMD+=("--log-disable")
-    # Add EXTRA_ARGS with word splitting to support multiple flags
     if [[ -n "${EXTRA_ARGS:-}" ]]; then
         for arg in $EXTRA_ARGS; do
             CMD+=("$arg")
@@ -300,11 +336,10 @@ if [[ "$DEPLOY" == true ]]; then
     fi
     CMD+=("--metrics")
 
-    # Construct the ExecStart string
+    # Construct the ExecStart string with safe escaping
     EXEC_START=""
     for arg in "${CMD[@]}"; do
         if [[ "$arg" =~ [^a-zA-Z0-9.,/_=-] ]]; then
-            # Wrap in double quotes and escape internal double quotes and backslashes
             escaped=$(echo "$arg" | sed 's/["\\]/\\&/g')
             EXEC_START+="\"$escaped\" "
         else
@@ -314,10 +349,10 @@ if [[ "$DEPLOY" == true ]]; then
 
     TMPUNIT=$(mktemp /tmp/llama-unit.XXXXXX)
     cat > "$TMPUNIT" << EOF
-
 [Unit]
 Description=Llama.cpp Server - Config: $CONFIG_NAME
-After=network.target
+After=network.target nss-lookup.target
+Wants=nvidia-suspend.service nvidia-hibernate.service nvidia-resume.service
 
 [Service]
 Type=simple
@@ -329,6 +364,9 @@ ExecStart=$EXEC_START
 
 Restart=always
 RestartSec=5
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=llama-server
 
 [Install]
 WantedBy=multi-user.target
@@ -336,13 +374,17 @@ EOF
 
     sudo cp "$TMPUNIT" "/etc/systemd/system/$SERVICE_NAME"
     rm -f "$TMPUNIT"
+    
+    echo "[INFO] Reloading systemd..."
     sudo systemctl daemon-reload
     sudo systemctl enable "$SERVICE_NAME"
     sudo systemctl restart "$SERVICE_NAME"
 
-    echo "✅ Service restarted."
+    echo "[INFO] Waiting 3 seconds for service startup check..."
+    sleep 3
+    sudo systemctl status "$SERVICE_NAME" --no-pager | head -n 15
 else
-    echo "⏭️  Skipping deployment (--no-deploy mode)"
+    echo "[INFO] Skipping deployment (--no-deploy mode)"
 fi
 
 echo "Binary path : $LLAMA_DIR/build/bin/llama-server"
@@ -350,7 +392,7 @@ echo "Model       : $MODEL_PATH"
 fi
 
 if [[ "$BENCH" == true ]]; then
-    echo "🏎️ Running benchmark..."
+    echo "[INFO] Running benchmark..."
     MODEL_NAME="${MODEL_ALIAS:-$(basename "$MODEL_PATH")}"
     OUTPUT=$(python3 "$SCRIPT_DIR/bench-llama.py" "$BENCH_COUNT" -p "$BENCH_PARALLEL" --port "$PORT" --model "$MODEL_NAME" --budget "$BENCH_BUDGET")
     echo "$OUTPUT"
@@ -360,7 +402,6 @@ if [[ "$BENCH" == true ]]; then
     CONFIG_NAME=$(basename "${CONFIG_OVERRIDE:-script_defaults}")
 
     if [[ -f "$BASELINES_FILE" ]]; then
-        # Parse current results
         CUR_AVG_GEN=$(echo "$OUTPUT" | grep "Generation" | tail -n 1 | awk '{print $4}')
         CUR_AGG_THR=$(echo "$OUTPUT" | grep "Throughput" | tail -n 1 | awk '{print $3}')
 
@@ -384,7 +425,7 @@ try:
         gen_diff = ((cur_gen - base['avg_gen']) / base['avg_gen']) * 100
         thr_diff = ((cur_thr - base['agg_thr']) / base['agg_thr']) * 100
         
-        print(f"\n📈 Performance Comparison vs Golden Baseline ({base['timestamp']}):")
+        print(f"\nPerformance Comparison vs Golden Baseline ({base['timestamp']}):")
         
         def fmt_diff(diff):
             color = "\033[92m" if diff >= -2 else ("\033[93m" if diff >= -10 else "\033[91m")
@@ -395,12 +436,12 @@ try:
         print(f"   - Agg Throughput: {base['agg_thr']:.1f} -> {cur_thr:.1f} tok/s ({fmt_diff(thr_diff)})")
         
         if thr_diff < -10:
-            print("\n⚠️  WARNING: PERFORMANCE REGRESSION DETECTED (>10% drop in throughput!)")
+            print("\nWARNING: PERFORMANCE REGRESSION DETECTED (>10% drop in throughput!)")
             print("   Review recent upstream changes or hardware thermal state.")
     else:
-        print(f"\nℹ️  No golden baseline found for {config_name}. Run ./scripts-local/save-baseline.sh to set one.")
+        print(f"\nNo golden baseline found for {config_name}. Run ./scripts-local/save-baseline.sh to set one.")
 except Exception as e:
-    print(f"\n❌ Error comparing baselines: {e}")
+    print(f"\nError comparing baselines: {e}")
 EOF
         fi
     fi
