@@ -123,13 +123,17 @@ def estimate_vram(conf, gpu_vram_mb):
     else:
         weights_vram_mb = 0.0
 
-    # 3. KV cache VRAM (accounts for parallel slots + idle-slot offload)
+    # 3. KV cache VRAM (accounts for parallel slots + idle-slot offload + CPU offload)
     ctx_size = int(conf.get("CTX_SIZE", 131072))
     cache_type_k = conf.get("CACHE_TYPE_K", "q8_0")
     parallel = int(conf.get("PARALLEL", 1))
     kv_unified = conf.get("KV_UNIFIED", "false")
     cache_idle_slots = conf.get("CACHE_IDLE_SLOTS", "false")
-    kv_vram_mb = estimate_kv_cache_mb(ctx_size, layers, kv_heads, head_dim, cache_type_k, parallel, kv_unified, cache_idle_slots)
+    kv_offload = conf.get("KV_OFFLOAD", "true")
+    if kv_offload == "false":
+        kv_vram_mb = 0.0
+    else:
+        kv_vram_mb = estimate_kv_cache_mb(ctx_size, layers, kv_heads, head_dim, cache_type_k, parallel, kv_unified, cache_idle_slots)
 
     # 4. Vision (mmproj) + CUDA overhead
     vision_vram = 800 if conf.get("MMPRJ_PATH") else 0
