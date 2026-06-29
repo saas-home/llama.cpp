@@ -24,8 +24,8 @@ CONFIG_OVERRIDE=""
 # Optimized for: AMD 7950X3D | RTX 4070 Ti Super (16GB) | CachyOS
 # Goal: Maximum Context (256K) with 4-slot stability.
 
-MODEL_PATH="/home/siva/models/gemma-4-26B-A4B-it/Ex0bit/mythos-26b-a4b-prism-pro-dq.gguf"
-MMPRJ_PATH="/home/siva/models/gemma-4-26B-A4B-it/Ex0bit/mmprj-mythos-26b-a4b-prism-pro.gguf"
+MODEL_PATH=""
+MMPRJ_PATH=""
 MODEL_ALIAS="${MODEL_ALIAS:-}"
 
 # CPU & Scheduling Optimization
