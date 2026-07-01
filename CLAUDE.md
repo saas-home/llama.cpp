@@ -140,10 +140,36 @@ Benchmark scripts in `scripts-local/`: `bench-llama.py`, `bench-multi.py`, `save
 
 ## Local Workflow Scripts (`scripts-local/`)
 
-- `rebuild-llama.sh` — Build/deploy/restart cycle for llama services. Flags: `--build`, `--bench`, `--no-deploy`, `--dry-run`, `--force`. Loads config from `.conf` files.
-- `sync-fork.sh` — **Always use for upstream sync** (never manual merge/rebase). Flags: `--branch`, `--force`, `--dry-run`. Uses ff-only merge with autostash. Saves current branch, syncs master with upstream, rebases current branch on master, force-pushes.
-- `.conf` files — Model service configs (Qwen3.6-35B-A3B, Gemma-4). Define SERVICE_NAME, MODEL_PATH, CUDA settings, context size, reasoning budgets.
-- `vram-linter.py` — VRAM usage validation.
+- `llama-rebuild-cachyos.sh` — **Use this, NOT `rebuild-llama.sh`** (the Ubuntu script uses `dpkg`/`apt` and will fail on CachyOS). Flags: `--build`, `--install-deps`, `--dry-run`. Auto-detects `g++-15/14/13`, pacman CUDA package path (`/usr/bin/nvcc`), and adds `cuda` package if missing. Generates systemd unit with CPU affinity, `LimitMEMLOCK=infinity`, `StandardOutput=journal`.
+- `rebuild-llama.sh` — Ubuntu variant (do not use on this machine).
+- `sync-fork.sh` — **Always use for upstream sync**. Flags: `--branch`, `--force`, `--dry-run`.
+- `vram-linter.py` — VRAM validation. **Known bug:** `estimate_vram()` only recognizes "qwen3" architecture names; Gemma-4, 12B, and 9B models are misdetected as Gemma-4-26B-A4B (30 layers, 8 KV heads, 128 experts), inflating KV estimates. Treat linter percentages above 100% for non-Qwen3 models as approximate only.
+
+### Model configurations — VRAM risk analysis (RTX 4070 Ti Super, 16GB)
+
+| Config | Model file | Weights | KV cache | Peak est. | Risk | Fix |
+|---|---|---|---|---|---|---|
+| `qwen-3.6-35b-a3b.conf` | MISSING | — | q4_0, 256K ctx | ~11.3GB (69%) | LOW | Find model file |
+| `qwen3.6-35b-a3b-mtp.conf` | MISSING | — | q4_0, 256K ctx | ~22.3GB (136%) | HIGH | `CTX_SIZE=65536`, enable `KV_OFFLOAD=true` |
+| `gemma-4-12b.conf` | exists (Q6_K, 9.1GB) | 9.1GB | q4_0, 256K ctx | ~26GB (inflated) | MODERATE | `CTX_SIZE=65536`, quantize F16 draft to Q4, `KV_OFFLOAD=true` |
+| `gemma-4-26b-a4b.conf` | MISSING | — | q8_0, 256K ctx | ~34GB (209%) | CRITICAL | Must set `KV_OFFLOAD=true`, `CTX_SIZE=32768`, `CACHE_TYPE_K=q4_0`, `PARALLEL=1` |
+| `gemma-4-26b-a4b-qat-ud.conf` | exists (Q4_K_XL, 13.6GB) | 13.6GB | q4_0, 131K ctx | ~18.7GB (114%) | FATAL | `N_GPU_LAYERS=15-20`, `KV_OFFLOAD=true`, `KV_UNIFIED=true`, `CACHE_IDLE_SLOTS=true`, `PARALLEL=1` |
+| `qwythos-9b.conf` | exists (Q8_0, 9.1GB) | 9.1GB | Q8_0, 256K ctx | ~26GB (163%) | MODERATE | Switch to Q4_K_M quant (~4.5GB), `CTX_SIZE=65536`, `KV_OFFLOAD=true` |
+
+**Common fixes per config:**
+- Default config (`MODEL_PATH=""`) has empty model path — service will fail unless an override `.conf` is passed explicitly.
+- `N_GPU_LAYERS=999` means "all layers," but for MoE models it should be replaced by `N_CPU_MOE` (CPU expert ratio). For a 32/40-layer model, `N_GPU_LAYERS=15-20` leaves ~6-7GB for KV cache.
+- MTP draft args in `EXTRA_ARGS` are commented out in most configs — uncomment to enable speedup (draft model runs on CPU by default).
+- Q8_0 KV cache (1.0 bytes/token) vs q4_0 (0.5) doubles KV cost. Use q4_0 for >10B models.
+
+### CUDA backend (RTX 4070 Ti Super, Ada Lovelace, AD107, 16GB)
+
+- Build flag `-DCMAKE_CUDA_ARCHITECTURES="89"` is correct for Ada.
+- CachyOS script enables `GGML_CUDA_FA=ON`, `GGML_CUDA_FA_ALL_QUANTS=ON`, `GGML_CUDA_GRAPHS=ON`, `GGML_CUDA_COMPRESSION_MODE=speed`.
+- `CUDA_VISIBLE_DEVICES` is not set — works fine for single-GPU; set it if a second GPU is added.
+- **Upstream fixes in your 17 new commits:** Gemma E4B MTP FlashAttention fix (#25148), `get_rows_back` grid-y clamp for >65535 rows (#25103), KQ mask overflow prevention (#24945), split compute sync revert (#25138).
+- Server uses `PARALLEL=2-3` logical slots sharing the GPU via batched inference (no multi-GPU). `--prio 2` (high) + CachyOS BORE scheduler — redundant but harmless.
+- IPv6 client URLs must use brackets: `http://[::1]:8080`. Server binds to `127.0.0.1` by default (`common/common.h:627`); use `--host 0.0.0.0` for dual-stack.
 
 ## Gotchas
 
