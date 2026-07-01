@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with this repository.
 
 ## Critical Rules
 
@@ -11,43 +11,40 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Avoid unicode characters:** use ASCII equivalents (`-` not `—`, `->` not `→`, `x` not `×`, `...` not `…`).
 - **Before writing code, read all relevant files and understand existing patterns.** If the change is large or introduces a new pattern, PAUSE and ask for confirmation.
 - **Majority of code must be human-authored.** AI may assist with corrections, formatting, repetitive patterns, or documentation drafts for understood components.
+- Code comments must be concise — only state a constraint the code itself can't show. Never restate what the code already says, and never write comments meaningful only out of context (e.g., "this fixes the problem you mentioned").
 
 ## Architecture
 
-### Core Library (llama.cpp)
+### Core Library
 
-The library is a plain C/C++ implementation with no external dependencies (beyond ggml). Public API is in `include/llama.h`.
+Plain C/C++ with no dependencies beyond ggml. Public API is `include/llama.h`.
 
 **Key types:**
 
-- **`llama_model`** — loaded from a GGUF file; holds weights and architecture metadata. Models live in `src/models/` (133 model implementations).
+- **`llama_model`** — loaded from GGUF; holds weights + architecture metadata. Model implementations live in `src/models/` (133 models).
 - **`llama_context`** — runtime state: KV cache, batches, compute graph. Created via `llama_init_from_model()`.
 - **`llama_batch`** — token batch for parallel decoding across sequences.
-- **`llama_sampler`** — composable token-sampling chain (temp, top-p, grammar, penalties, etc.).
+- **`llama_sampler`** — composable token-sampling chain (temp, top-p, grammar, penalties).
 - **`llama_vocab`** — tokenizer (SPM, BPE, WPM, UGM).
-- **`llama_cparams`** / **`llama_hparams`** — context and hyperparameter configs.
-- **`llama-kv-cache`** — unified KV cache (DSA, ISWA variants); supports hybrid and recurrent memory.
+- **`llama_cparams` / `llama_hparams`** — context and hyperparameter configs.
+- **`llama-kv-cache`** — unified KV cache (DSA, ISWA variants); hybrid and recurrent memory.
 
 **Inference pipeline:**
 
-1. `llama_model_load()` — read GGUF, allocate weights, dispatch to model-specific loader in `src/models/`.
+1. `llama_model_load()` — read GGUF, allocate weights, dispatch to model loader in `src/models/`.
 2. `llama_init_from_model()` — create context, allocate KV cache, initialize backend buffers.
 3. Build `llama_batch` with prompt tokens.
 4. `llama_decode(ctx, batch)` — build ggml compute graph, execute on backend.
 5. `llama_sampler_sample(sampler, ctx, -1)` — sample next token from logits.
-6. Repeat steps 3-5 for generation.
+6. Repeat 3-5 for generation.
 
-### ggml — the tensor library
+### ggml — tensor library
 
-ggml lives in `ggml/` and is a **dependency, not a submodule** (upstream: `github.com/ggml-org/ggml`). It provides:
-
-- Tensor allocation and ops (mul_mat, norm, rope, etc.)
-- Backend abstraction: CPU (with SIMD dispatch), CUDA, Metal, Vulkan, SYCL, HIP
-- Compute graph builder: ops are graphed, then scheduled and executed
+ggml lives in `ggml/` and is a **dependency, not a submodule** (upstream: `github.com/ggml-org/ggml`). Provides tensor ops (mul_mat, norm, rope), backend abstraction (CPU/SIMD, CUDA, Metal, Vulkan, SYCL, HIP), and the compute graph builder.
 
 **Matrix multiplication is unconventional:** `C = ggml_mul_mat(ctx, A, B)` means $C = B A^T$. See `CONTRIBUTING.md` for the diagram.
 
-Backends are dynamic — multiple can be compiled in and selected at runtime via `--device`. Use `--device none` for CPU-only. GGML backend dynamic loading builds `.so` files loaded at runtime (`GGML_BACKEND_DL`).
+Backends are dynamic — multiple compiled in, selected at runtime via `--device`. Backend dynamic loading builds `.so` files (`GGML_BACKEND_DL`). Metal is enabled by default on macOS (`-DGGML_METAL=OFF` to disable).
 
 ### Server Architecture
 
@@ -55,14 +52,14 @@ Backends are dynamic — multiple can be compiled in and selected at runtime via
 
 **Core components:**
 
-- **`server_context`** — main inference state; single-threaded; holds `llama_context` and all active slots.
-- **`server_slot`** — one per parallel request; manages prompt, generation, and state for a single sequence.
+- **`server_context`** — main inference state; single-threaded; holds `llama_context` + all active slots.
+- **`server_slot`** — one per parallel request; manages prompt, generation, and state per sequence.
 - **`server_queue`** — thread-safe task queue (HTTP workers -> `server_context`).
 - **`server_response`** — thread-safe result queue (`server_context` -> HTTP workers).
-- **`server_task`** / **`server_task_result`** — units of work and results.
+- **`server_task` / `server_task_result`** — units of work and results.
 - **`server_tokens`** — unified token representation (text + multimodal).
 
-**Request flow:** HTTP handler parses JSON, creates `server_task`, pushes to queue -> `server_context` dispatches to a `server_slot` -> slot calls `update_slots()` which batches across slots and calls `llama_decode()` -> results flow back via `server_task_result`.
+**Request flow:** HTTP handler parses JSON -> `server_task` -> queue -> `server_context` dispatches to `server_slot` -> slot calls `update_slots()` which batches across slots and calls `llama_decode()` -> results back via `server_task_result`.
 
 **Thread model:** `server_context` runs on one thread. Heavy post-processing blocks multi-sequence throughput. HTTP workers handle JSON parsing, chat templates, tokenization — keep these concerns separate.
 
@@ -72,17 +69,17 @@ Backends are dynamic — multiple can be compiled in and selected at runtime via
 |------|----------|
 | `src/` | Core llama library (model, context, graph, KV cache, sampler, vocab) |
 | `src/models/` | Model-specific architecture implementations (133 models) |
-| `ggml/` | Tensor library (ggml), upstream dependency at `github.com/ggml-org/ggml` |
+| `ggml/` | Tensor library (ggml), upstream dependency |
 | `include/llama.h` | Public C API header |
-| `common/` | Shared utilities (chat, sampling, jinja, peg-parser, arg parsing, HTTP helpers, logging) |
+| `common/` | Shared utilities (chat, sampling, jinja, peg-parser, arg parsing, HTTP helpers) |
 | `tools/` | CLI tools (server, cli, quantize, bench, imatrix, gguf-split, perplexity, tokenize, tts, rpc, ui) |
 | `tools/server/` | OpenAI-compatible HTTP server |
 | `tools/ui/` | SvelteKit web UI |
 | `examples/` | Example programs |
-| `tests/` | Test sources (C++ unit tests, Python tokenizer tests, shell integration tests) |
+| `tests/` | C++ unit tests, Python tokenizer tests, shell integration tests |
 | `grammars/` | GBNF grammar files for structured output |
 | `conversion/` | Python model conversion scripts |
-| `scripts-local/` | Local workflow scripts (rebuild-llama.sh, sync-fork.sh, model .conf files) |
+| `scripts-local/` | Local workflow scripts (rebuild, sync, benchmarks) |
 
 ## Build
 
@@ -93,24 +90,20 @@ llama.cpp uses **CMake**. The Makefile is a stub that errors out.
 cmake -B build -DCMAKE_BUILD_TYPE=Release
 cmake --build build -j$(nproc)
 
-# With CUDA
+# With CUDA (not preset-based — enable manually)
 cmake -B build -DGGML_CUDA=ON
 cmake --build build -j$(nproc)
 
-# Use presets (Ninja, pre-configured toolchains)
+# Presets (Ninja, pre-configured toolchains)
 cmake --preset x64-linux-gcc-release
 cmake --build build-x64-linux-gcc-release
 ```
 
-CMake presets in `CMakePresets.json` cover Linux GCC (debug/release/reldbg, static), Windows MSVC/LLVM, SYCL, and Vulkan (Windows only). **CUDA is not preset-based** — enable manually with `-DGGML_CUDA=ON`.
-
-Key CMake options: `GGML_CUDA`, `GGML_METAL`, `GGML_VULKAN`, `GGML_HIP`, `GGML_SYCL`, `GGML_BLAS`, `GGML_NATIVE`, `GGML_STATIC`, `GGML_CUDA_PEER_MAX_BATCH_SIZE`.
+Presets in `CMakePresets.json`: Linux GCC (debug/release/reldbg, static), Windows MSVC/LLVM, SYCL, Vulkan (Windows only). Key options: `GGML_CUDA`, `GGML_METAL`, `GGML_VULKAN`, `GGML_HIP`, `GGML_SYCL`, `GGML_BLAS`, `GGML_NATIVE`, `GGML_STATIC`, `GGML_CUDA_PEER_MAX_BATCH_SIZE`.
 
 Output binaries: `build/bin/llama-*`, `build/bin/ggml-*`.
 
 ## Tests
-
-Tests are CMake targets + CTest. Build tests first, then:
 
 ```bash
 cmake --build build --target tests
@@ -119,68 +112,55 @@ ctest --test-dir build --label-exclude gpu --output-on-failure   # skip GPU test
 ctest --test-dir build --label-exclude "main|gpu" --output-on-failure  # quick smoke
 ```
 
-Individual test: `./build/bin/test-<name>` (e.g., `./build/bin/test-chat`).
+Individual test: `./build/bin/test-<name>`. Full CI: `bash ci/run.sh ./tmp/results ./tmp/mnt` (see `ci/README.md`). Python tokenizer tests: `tests/test-tokenizer-0.py`, `tests/test-tokenizer-random.py`. Shell tests: `tests/test-tokenizer-0.sh`, `tests/test-lora-conversion-inference.sh`.
 
-Full CI locally: `bash ci/run.sh ./tmp/results ./tmp/mnt` (see `ci/README.md`). Set `GG_BUILD_CUDA=1` etc. for GPU backends.
-
-Python tokenizer tests: `tests/test-tokenizer-0.py`, `tests/test-tokenizer-random.py`.
-Shell integration tests: `tests/test-tokenizer-0.sh`, `tests/test-lora-conversion-inference.sh`.
-
-Local benchmark scripts in `scripts-local/`: `bench-llama.py`, `bench-multi.py`, `save-baseline.sh`.
+Benchmark scripts in `scripts-local/`: `bench-llama.py`, `bench-multi.py`, `save-baseline.sh`.
 
 ## Code Style
 
-- **clang-format** (clang-tools v15+): 4-space indent, column limit 120, `BraceWrapping.AfterCaseLabel: true`, `BreakBeforeBraces: Attach`
-- **clang-tidy**: bugprone, readability, performance, portability, misc checks
-- Naming: `snake_case` for functions/variables, `<class>_<method>` pattern for API (e.g., `llama_sampler_chain_remove`), UPPER_CASE prefixed enum values (e.g., `LLAMA_VOCAB_TYPE_BPE`)
-- C++17, no fancy STL constructs, basic for-loops preferred
-- Python: flake8 (max 125 chars), mypy (strict mode), ty (`ty.toml`)
-- Pre-commit: `pre-commit run --all-files` (trailing-whitespace, end-of-file, yaml, flake8)
+- **clang-format** (v15+): 4-space, 120 chars, `BraceWrapping.AfterCaseLabel: true`, `BreakBeforeBraces: Attach`
+- **clang-tidy**: bugprone, readability, performance, portability, misc
+- **Naming:** `snake_case` for functions/variables, `<class>_<method>` for API, UPPER_CASE enums
+- **Language:** C++17, no fancy STL, basic for-loops. Python: flake8 (125 chars, excluding `examples`/`tools`), mypy strict, ty (`ty.toml`)
+- **Pre-commit:** `pre-commit run --all-files` (trailing-whitespace, end-of-file, yaml, flake8)
 
-## GGUF Model Format
+## PR Guidelines (from CONTRIBUTING.md)
 
-- Models must be in GGUF format (`.gguf`).
-- Convert from PyTorch/HF: `python convert_hf_to_gguf.py <model_path>`
-- Quantize: see `tools/quantize/README.md`
-- Add new model support: `docs/development/HOWTO-add-model.md`
+- Check existing issues/PRs before submitting; avoid duplicates.
+- **One feature per PR.** For new models or features, add **CPU support only** in the initial PR; backends follow in separate PRs.
+- New quantization types carry disproportionate maintenance burden: must provide conversion to HF, perplexity comparisons vs FP16/BF16, KL divergence data, and performance data on pure CPU.
+- If modifying ggml, run `test-backend-ops` with at least two backends; add test cases for new operators.
+- Verify perplexity and performance are not negatively affected (`llama-perplexity`, `llama-bench`).
+- Check `ci/run.sh` locally before publishing.
+
+## GGUF Models
+
+- Models must be in GGUF format (`.gguf`). Convert from PyTorch/HF: `python convert_hf_to_gguf.py <model_path>`. Quantize: see `tools/quantize/README.md`. Add models: `docs/development/HOWTO-add-model.md`.
+- Conversion scripts require Python >= 3.10 with torch, transformers, sentencepiece, numpy. `pip install -e ".[dev]"` via pyproject.toml.
+
+## Local Workflow Scripts (`scripts-local/`)
+
+- `rebuild-llama.sh` — Build/deploy/restart cycle for llama services. Flags: `--build`, `--bench`, `--no-deploy`, `--dry-run`, `--force`. Loads config from `.conf` files.
+- `sync-fork.sh` — **Always use for upstream sync** (never manual merge/rebase). Flags: `--branch`, `--force`, `--dry-run`. Uses ff-only merge with autostash. Saves current branch, syncs master with upstream, rebases current branch on master, force-pushes.
+- `.conf` files — Model service configs (Qwen3.6-35B-A3B, Gemma-4). Define SERVICE_NAME, MODEL_PATH, CUDA settings, context size, reasoning budgets.
+- `vram-linter.py` — VRAM usage validation.
 
 ## Gotchas
 
 - **ggml is a dependency**, not a submodule. Changes to ggml ops must be synced upstream.
-- **Backends are dynamic**: multiple backends compiled in, selected at runtime via `--device`. Use `--device none` for CPU-only.
-- **Matrix multiplication is unconventional**: `C = ggml_mul_mat(ctx, A, B)` means $C = B A^T$.
-- **GGML backend dynamic loading**: built as `.so` files loaded at runtime. Enable with `GGML_BACKEND_DL`.
-- **Metal is enabled by default on macOS**. Disable with `-DGGML_METAL=OFF`.
-- **No git submodules** currently in the repo.
-
-## Server Development
-
-The `llama-server` tool is a separate sub-project. Before implementing server features, read `tools/server/README-dev.md` for scope and conventions.
-
-## Python Scripts
-
-Model conversion scripts (`conversion/*.py`) require Python >= 3.10 with torch, transformers, sentencepiece, numpy.
-
-```bash
-pip install -e ".[dev]"  # via pyproject.toml
-```
-
-## Local Workflow Scripts
-
-`scripts-local/` contains custom scripts for this environment:
-
-- `rebuild-llama.sh` — Build/deploy/restart cycle for llama services. Supports `--build`, `--bench`, `--no-deploy`, `--dry-run`, `--force` flags. Loads config from `.conf` files.
-- `sync-fork.sh` — **Always use this script for upstream sync** (never manual git merge/rebase). Supports `--branch`, `--force`, `--dry-run`. Uses ff-only merge with autostash. Saves current branch, syncs master with upstream, rebases current branch on master, force-pushes.
-- `.conf` files — Model service configurations (Qwen3.6-35B-A3B, Gemma-4 variants). Define SERVICE_NAME, MODEL_PATH, CUDA settings, context size, reasoning budgets, etc.
-- `bench-llama.py`, `bench-multi.py` — Benchmarking utilities.
-- `vram-linter.py` — VRAM usage validation.
+- **Dynamic backends**: multiple compiled in, selected at runtime via `--device`. Use `--device none` for CPU-only.
+- **`ggml_mul_mat` transposes B**: `C = B A^T`.
+- **GGML backend `.so` loading**: enable with `GGML_BACKEND_DL`.
+- No git submodules.
 
 ## Useful References
 
-- [AGENTS.md](AGENTS.md) — full contributor and AI-agent guidelines
-- [CONTRIBUTING.md](CONTRIBUTING.md) — project contribution rules, coding/naming guidelines
+- [AGENTS.md](AGENTS.md) — contributor and AI-agent guidelines
+- [CONTRIBUTING.md](CONTRIBUTING.md) — project contribution rules
 - [HOWTO-add-model.md](docs/development/HOWTO-add-model.md) — adding new model support
-- [Server README-dev](tools/server/README-dev.md) — server development scope and architecture
+- [Server README-dev](tools/server/README-dev.md) — server development scope
 - [Parsing docs](docs/development/parsing.md) — PEG parser for model output
 - [Jinja README](common/jinja/README.md) — template engine
-- [Build docs](docs/build.md) — build documentation
+- [Build docs](docs/build.md)
+- [PR template](.github/pull_request_template.md)
+- API changelogs: [libllama](https://github.com/ggml-org/llama.cpp/issues/9289), [llama-server REST](https://github.com/ggml-org/llama.cpp/issues/9291)
