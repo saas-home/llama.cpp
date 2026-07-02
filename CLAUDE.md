@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with this repository.
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Critical Rules
 
@@ -62,6 +62,8 @@ Backends are dynamic — multiple compiled in, selected at runtime via `--device
 **Request flow:** HTTP handler parses JSON -> `server_task` -> queue -> `server_context` dispatches to `server_slot` -> slot calls `update_slots()` which batches across slots and calls `llama_decode()` -> results back via `server_task_result`.
 
 **Thread model:** `server_context` runs on one thread. Heavy post-processing blocks multi-sequence throughput. HTTP workers handle JSON parsing, chat templates, tokenization — keep these concerns separate.
+
+**Server scope:** In-scope features include basic inference (text completion, embeddings), chat features (completion, tool calling), third-party API compatibility (OAI, Anthropic), multimodal I/O, memory management (save/load state, checkpoints), and model management. Out-of-scope: server-side agentic loops (external API calls in C++ are costly to maintain), exposing internal model state via API, and model-specific features (all API calls must be model-agnostic).
 
 ### Key Directories
 
