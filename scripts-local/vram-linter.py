@@ -97,7 +97,7 @@ def estimate_vram(conf, gpu_vram_mb):
 
     # Architecture detection from model path
     model_lower = model_path.lower()
-    if "qwen3.6" in model_lower or "qwen3" in model_lower:
+    if "qwen3.6" in model_lower or "qwen3" in model_lower or "ornith" in model_lower:
         layers = QWEN36_LAYERS
         kv_heads = QWEN36_KV_HEADS
         head_dim = QWEN36_HEAD_DIM
@@ -114,12 +114,21 @@ def estimate_vram(conf, gpu_vram_mb):
     model_size_mb = get_model_file_size_mb(model_path)
 
     # 2. Model VRAM: apply n-gpu-layers and n-cpu-moe ratio
-    # If n_gpu_layers == 999, all layers go to GPU
+    # MoE models (Qwen MoE, Gemma-4 MoE) have a large portion of their weights in experts.
+    # We assume MoE experts comprise ~90% of the weights, and non-MoE/attention/shared weights comprise ~10%.
+    moe_fraction = 0.90
+    non_moe_fraction = 0.10
+
+    # Ensure n_cpu_moe is bounded by layers
+    effective_cpu_moe = min(n_cpu_moe, layers)
+
     if n_gpu_layers >= layers:
-        weights_vram_mb = model_size_mb
+        # All non-MoE weights on GPU, MoE weights for layers above effective_cpu_moe on GPU
+        weights_vram_mb = model_size_mb * (non_moe_fraction + moe_fraction * (layers - effective_cpu_moe) / layers)
     elif n_gpu_layers > 0:
-        # Proportional: GPU gets n_gpu_layers/layers of the model
-        weights_vram_mb = model_size_mb * n_gpu_layers / layers
+        # Proportional non-MoE on GPU, MoE weights for layers on GPU and above effective_cpu_moe on GPU
+        weights_gpu_moe_layers = max(0, n_gpu_layers - effective_cpu_moe)
+        weights_vram_mb = model_size_mb * (non_moe_fraction * n_gpu_layers / layers + moe_fraction * weights_gpu_moe_layers / layers)
     else:
         weights_vram_mb = 0.0
 
