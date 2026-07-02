@@ -324,6 +324,7 @@ Type=simple
 User=siva
 CPUAffinity=$CPU_AFFINITY
 LimitMEMLOCK=infinity
+Environment=GGML_CUDA_REGISTER_HOST=1
 
 ExecStart=$EXEC_START
 
