@@ -97,7 +97,7 @@ def estimate_vram(conf, gpu_vram_mb):
 
     # Architecture detection from model path
     model_lower = model_path.lower()
-    if "qwen3.6" in model_lower or "qwen3" in model_lower or "ornith" in model_lower:
+    if "qwen3.6" in model_lower or "qwen3" in model_lower or "ornith" in model_lower or "qwopus" in model_lower:
         layers = QWEN36_LAYERS
         kv_heads = QWEN36_KV_HEADS
         head_dim = QWEN36_HEAD_DIM
