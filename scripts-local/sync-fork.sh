@@ -119,15 +119,39 @@ fi
 
 print_step "Fetching and merging from $UPSTREAM_REMOTE/$UPSTREAM_BRANCH"
 git fetch "$UPSTREAM_REMOTE" "$UPSTREAM_BRANCH"
-if git merge --ff-only "$UPSTREAM_REMOTE/$UPSTREAM_BRANCH"; then
-    print_success "Master is now up to date with upstream"
+
+MASTER_REBASED=false
+if git merge --ff-only "$UPSTREAM_REMOTE/$UPSTREAM_BRANCH" 2>/dev/null; then
+    print_success "Master is now up to date with upstream (fast-forwarded)"
 else
-    print_error "Failed to merge upstream/$UPSTREAM_BRANCH into master"
-    exit 1
+    print_info "Fast-forward not possible (local commits detected on $UPSTREAM_BRANCH)."
+    print_step "Attempting to rebase $UPSTREAM_BRANCH onto $UPSTREAM_REMOTE/$UPSTREAM_BRANCH"
+    if git rebase "$UPSTREAM_REMOTE/$UPSTREAM_BRANCH"; then
+        print_success "Rebase of $UPSTREAM_BRANCH completed successfully"
+        MASTER_REBASED=true
+    else
+        print_error "Rebase conflict detected on $UPSTREAM_BRANCH"
+        echo "To resolve:"
+        echo "  1. Fix conflicts"
+        echo "  2. git add <files>"
+        echo "  3. git rebase --continue"
+        exit 1
+    fi
 fi
 
 print_step "Pushing updated $UPSTREAM_BRANCH to $FORK_REMOTE"
-git push "$FORK_REMOTE" "$UPSTREAM_BRANCH"
+if [[ "$MASTER_REBASED" == true ]]; then
+    if [[ "$FORCE_PUSH" == true ]]; then
+        print_info "History changed on $UPSTREAM_BRANCH, force-pushing to $FORK_REMOTE..."
+        git push -f "$FORK_REMOTE" "$UPSTREAM_BRANCH"
+    else
+        print_error "Local commits were rebased on $UPSTREAM_BRANCH. Pushing requires '--force'."
+        echo "Please re-run with: $0 --force"
+        exit 1
+    fi
+else
+    git push "$FORK_REMOTE" "$UPSTREAM_BRANCH"
+fi
 
 if [[ "$BRANCH" != "$UPSTREAM_BRANCH" ]]; then
     print_step "Returning to $BRANCH"
