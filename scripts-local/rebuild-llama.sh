@@ -25,10 +25,10 @@ CONFIG_OVERRIDE=""
 # 0. Dependency check for Ubuntu
 if [[ -f /etc/lsb-release ]] && grep -q "Ubuntu" /etc/lsb-release; then
     echo "🔍 Checking for Ubuntu dependencies..."
-    DEPS=(build-essential cmake ninja-build git libcurl4-openssl-dev pkg-config)
-    # Only auto-install Ubuntu's nvidia-cuda-toolkit if NVIDIA's official toolkit isn't present
-    if [[ ! -x /usr/local/cuda/bin/nvcc ]]; then
-        DEPS+=(nvidia-cuda-toolkit)
+    DEPS=(build-essential cmake ninja-build git libcurl4-openssl-dev pkg-config ccache)
+    if ! command -v nvcc >/dev/null 2>&1 && [[ ! -x /usr/local/cuda/bin/nvcc ]]; then
+        echo "⚠️  WARNING: nvcc compiler not found in /usr/local/cuda/bin or PATH."
+        echo "   Please ensure NVIDIA CUDA Toolkit 13.3 is installed."
     fi
     MISSING_DEPS=()
     for dep in "${DEPS[@]}"; do
@@ -135,17 +135,26 @@ for arg in "$@"; do
     esac
 done
 
+# Default to qwen-3.8-27b-gsq.conf if no config specified and it exists
+if [[ -z "$CONFIG_OVERRIDE" && -f "$SCRIPT_DIR/qwen-3.8-27b-gsq.conf" ]]; then
+    CONFIG_OVERRIDE="$SCRIPT_DIR/qwen-3.8-27b-gsq.conf"
+fi
+
 if [[ -n "$CONFIG_OVERRIDE" ]]; then
     if [[ -f "$CONFIG_OVERRIDE" ]]; then
-        echo "📂 Overriding defaults with: $CONFIG_OVERRIDE"
-        source "$CONFIG_OVERRIDE"
-        # --- VRAM Pre-flight Check ---
-        if [[ -f "$SCRIPT_DIR/vram-linter.py" ]]; then
-            python3 "$SCRIPT_DIR/vram-linter.py" "$CONFIG_OVERRIDE" || true
-        fi
+        RESOLVED_CONF="$CONFIG_OVERRIDE"
+    elif [[ -f "$SCRIPT_DIR/$CONFIG_OVERRIDE" ]]; then
+        RESOLVED_CONF="$SCRIPT_DIR/$CONFIG_OVERRIDE"
     else
         echo "❌ Override config file not found: $CONFIG_OVERRIDE"
         exit 1
+    fi
+    echo "📂 Overriding defaults with: $RESOLVED_CONF"
+    CONFIG_OVERRIDE="$RESOLVED_CONF"
+    source "$CONFIG_OVERRIDE"
+    # --- VRAM Pre-flight Check ---
+    if [[ -f "$SCRIPT_DIR/vram-linter.py" ]]; then
+        python3 "$SCRIPT_DIR/vram-linter.py" "$CONFIG_OVERRIDE" || true
     fi
 fi
 
@@ -179,30 +188,23 @@ echo "🔄 Stopping service..."
 sudo systemctl stop "$SERVICE_NAME" || true
 
 if [[ "$BUILD" == true ]]; then
-    # 4. Update to latest
-    git pull || true
-
-    # 6. Build with best optimizations
-    echo "🛠️ Building with maximum optimizations (CUDA 13.2 optimized)..."
+    echo "🛠️ Building with maximum optimizations (CUDA 13.3 / sm_89)..."
     
     CUDA_ARGS=()
-    if [[ -x "/opt/cuda/bin/nvcc" ]]; then
-        CUDA_ARGS+=("-DCMAKE_CUDA_COMPILER=/opt/cuda/bin/nvcc")
-        export PATH="/opt/cuda/bin:$PATH"
-    elif [[ -x "/usr/bin/nvcc" ]]; then
-        CUDA_ARGS+=("-DCMAKE_CUDA_COMPILER=/usr/bin/nvcc")
-        export PATH="/usr/bin:$PATH"
-    elif [[ -x "/usr/local/cuda/bin/nvcc" ]]; then
+    if [[ -x "/usr/local/cuda/bin/nvcc" ]]; then
         CUDA_ARGS+=("-DCMAKE_CUDA_COMPILER=/usr/local/cuda/bin/nvcc")
         export PATH="/usr/local/cuda/bin:$PATH"
+    elif command -v nvcc >/dev/null 2>&1; then
+        NVCC_BIN=$(command -v nvcc)
+        CUDA_ARGS+=("-DCMAKE_CUDA_COMPILER=$NVCC_BIN")
     fi
 
     cmake -B build -S . -G Ninja \
       -DCMAKE_BUILD_TYPE=Release \
       "${CUDA_ARGS[@]+"${CUDA_ARGS[@]}"}" \
-      -DCMAKE_CUDA_HOST_COMPILER=/usr/bin/g++-13 \
       -DGGML_NATIVE=ON \
       -DGGML_AVX512=ON \
+      -DGGML_AVX512_VBMI=ON \
       -DGGML_AVX512_VNNI=ON \
       -DGGML_AVX512_BF16=ON \
       -DGGML_CUDA=ON \
@@ -210,7 +212,6 @@ if [[ "$BUILD" == true ]]; then
       -DGGML_CUDA_FA_ALL_QUANTS=ON \
       -DGGML_CUDA_GRAPHS=ON \
       -DGGML_CUDA_NO_PEER_COPY=OFF \
-      -DGGML_CUDA_PEER_MAX_BATCH_SIZE=128 \
       -DGGML_CUDA_COMPRESSION_MODE=speed \
       -DGGML_CUDA_NO_VMM=OFF \
       -DGGML_CCACHE=ON \
@@ -230,23 +231,23 @@ if [[ "$DEPLOY" == true ]]; then
     CMD=("$LLAMA_DIR/build/bin/llama-server")
     CMD+=("--model" "$MODEL_PATH")
     [[ -n "$MODEL_ALIAS" ]] && CMD+=("--alias" "$MODEL_ALIAS")
-    CMD+=("--path" "$LLAMA_DIR/build/tools/ui/dist")
-    [[ -n "$MMPRJ_PATH" ]] && CMD+=("--mmproj" "$MMPRJ_PATH")
+    [[ -d "$LLAMA_DIR/build/tools/ui/dist" ]] && CMD+=("--path" "$LLAMA_DIR/build/tools/ui/dist")
+    [[ -n "$MMPRJ_PATH" && -f "$MMPRJ_PATH" ]] && CMD+=("--mmproj" "$MMPRJ_PATH")
     [[ "$MMPRJ_OFFLOAD" == "false" ]] && CMD+=("--no-mmproj-offload")
     CMD+=("--n-gpu-layers" "$N_GPU_LAYERS")
-    CMD+=("--n-cpu-moe" "$N_CPU_MOE")
+    [[ -n "${N_CPU_MOE:-}" && "$N_CPU_MOE" -gt 0 ]] && CMD+=("--n-cpu-moe" "$N_CPU_MOE")
     CMD+=("--cache-type-k" "$CACHE_TYPE_K")
     CMD+=("--cache-type-v" "$CACHE_TYPE_V")
-    [[ "$MLOCK" == "true" ]] && CMD+=("--mlock")
-    [[ "$MMAP" == "false" ]] && CMD+=("--no-mmap")
+    [[ "$MLOCK" == "true" ]] && CMD+=("--load-mode" "mlock")
+    [[ "$MMAP" == "false" && "$MLOCK" != "true" ]] && CMD+=("--load-mode" "none")
     CMD+=("--parallel" "$PARALLEL")
     CMD+=("--cache-ram" "$CACHE_RAM")
     [[ -n "$CACHE_REUSE" ]] && CMD+=("--cache-reuse" "$CACHE_REUSE")
     [[ "${KV_UNIFIED:-}" == "true" ]] && CMD+=("--kv-unified")
     [[ "$KV_OFFLOAD" == "false" ]] && CMD+=("--no-kv-offload")
-    [[ "${CLEAR_IDLE:-}" == "true" ]] && CMD+=("--cache-idle-slots")
+    [[ "${CLEAR_IDLE:-}" == "true" || "${CACHE_IDLE_SLOTS:-}" == "true" ]] && CMD+=("--cache-idle-slots")
     [[ "${CONTEXT_SHIFT:-}" == "true" ]] && CMD+=("--context-shift")
-    CMD+=("--slot-save-path" "$SLOT_SAVE_PATH")
+    [[ -n "$SLOT_SAVE_PATH" ]] && CMD+=("--slot-save-path" "$SLOT_SAVE_PATH")
     CMD+=("--cont-batching")
     CMD+=("--threads" "$THREADS")
     CMD+=("--threads-batch" "$THREADS_BATCH")
