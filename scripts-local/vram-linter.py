@@ -20,9 +20,15 @@ QWEN36_KV_HEADS = 2
 QWEN36_HEAD_DIM = 256
 QWEN36_EXPERTS = 256
 
+QWEN38_27B_LAYERS = 64
+QWEN38_27B_KV_LAYERS = 16  # full_attention_interval = 4 (hybrid SSM/Transformer)
+QWEN38_27B_KV_HEADS = 4
+QWEN38_27B_HEAD_DIM = 256
+QWEN38_27B_EXPERTS = 0
+
 # Safety threshold: fraction of total VRAM to leave free for system/OS
-# 90% leaves ~1.6 GB headroom on 16 GB GPU for display server, other processes
-SAFETY_FRACTION = 0.90
+# 95% utilizes up to ~15.5 GB on 16 GB GPU (per workspace GEMINI.md mandate)
+SAFETY_FRACTION = 0.95
 
 # CUDA allocator overhead multiplier (workspace buffers, fragmentation)
 CUDA_OVERHEAD = 1.08
@@ -97,14 +103,23 @@ def estimate_vram(conf, gpu_vram_mb):
 
     # Architecture detection from model path
     model_lower = model_path.lower()
-    if "qwen3.6" in model_lower or "qwen3" in model_lower or "ornith" in model_lower or "qwopus" in model_lower:
+    if "qwen3.8-27b" in model_lower or "qwen3.8" in model_lower or "27b" in model_lower:
+        layers = QWEN38_27B_LAYERS
+        kv_layers = QWEN38_27B_KV_LAYERS
+        kv_heads = QWEN38_27B_KV_HEADS
+        head_dim = QWEN38_27B_HEAD_DIM
+        total_experts = QWEN38_27B_EXPERTS
+        arch_name = "Qwen3.8-27B (SSM/Attention Hybrid)"
+    elif "qwen3.6" in model_lower or "qwen3" in model_lower or "ornith" in model_lower or "qwopus" in model_lower:
         layers = QWEN36_LAYERS
+        kv_layers = layers
         kv_heads = QWEN36_KV_HEADS
         head_dim = QWEN36_HEAD_DIM
         total_experts = QWEN36_EXPERTS
         arch_name = "Qwen3.6-35B-A3B"
     else:
         layers = GEMMA4_LAYERS
+        kv_layers = layers
         kv_heads = GEMMA4_KV_HEADS
         head_dim = GEMMA4_HEAD_DIM
         total_experts = GEMMA4_EXPERTS
@@ -114,23 +129,27 @@ def estimate_vram(conf, gpu_vram_mb):
     model_size_mb = get_model_file_size_mb(model_path)
 
     # 2. Model VRAM: apply n-gpu-layers and n-cpu-moe ratio
-    # MoE models (Qwen MoE, Gemma-4 MoE) have a large portion of their weights in experts.
-    # We assume MoE experts comprise ~90% of the weights, and non-MoE/attention/shared weights comprise ~10%.
-    moe_fraction = 0.90
-    non_moe_fraction = 0.10
-
-    # Ensure n_cpu_moe is bounded by layers
-    effective_cpu_moe = min(n_cpu_moe, layers)
-
-    if n_gpu_layers >= layers:
-        # All non-MoE weights on GPU, MoE weights for layers above effective_cpu_moe on GPU
-        weights_vram_mb = model_size_mb * (non_moe_fraction + moe_fraction * (layers - effective_cpu_moe) / layers)
-    elif n_gpu_layers > 0:
-        # Proportional non-MoE on GPU, MoE weights for layers on GPU and above effective_cpu_moe on GPU
-        weights_gpu_moe_layers = max(0, n_gpu_layers - effective_cpu_moe)
-        weights_vram_mb = model_size_mb * (non_moe_fraction * n_gpu_layers / layers + moe_fraction * weights_gpu_moe_layers / layers)
+    if total_experts == 0:
+        # Dense model
+        weights_vram_mb = model_size_mb * min(n_gpu_layers, layers) / layers
     else:
-        weights_vram_mb = 0.0
+        # MoE models (Qwen MoE, Gemma-4 MoE) have a large portion of their weights in experts.
+        # We assume MoE experts comprise ~90% of the weights, and non-MoE/attention/shared weights comprise ~10%.
+        moe_fraction = 0.90
+        non_moe_fraction = 0.10
+
+        # Ensure n_cpu_moe is bounded by layers
+        effective_cpu_moe = min(n_cpu_moe, layers)
+
+        if n_gpu_layers >= layers:
+            # All non-MoE weights on GPU, MoE weights for layers above effective_cpu_moe on GPU
+            weights_vram_mb = model_size_mb * (non_moe_fraction + moe_fraction * (layers - effective_cpu_moe) / layers)
+        elif n_gpu_layers > 0:
+            # Proportional non-MoE on GPU, MoE weights for layers on GPU and above effective_cpu_moe on GPU
+            weights_gpu_moe_layers = max(0, n_gpu_layers - effective_cpu_moe)
+            weights_vram_mb = model_size_mb * (non_moe_fraction * n_gpu_layers / layers + moe_fraction * weights_gpu_moe_layers / layers)
+        else:
+            weights_vram_mb = 0.0
 
     # 3. KV cache VRAM (accounts for parallel slots + idle-slot offload + CPU offload)
     ctx_size = int(conf.get("CTX_SIZE", 131072))
@@ -142,10 +161,11 @@ def estimate_vram(conf, gpu_vram_mb):
     if kv_offload == "false":
         kv_vram_mb = 0.0
     else:
-        kv_vram_mb = estimate_kv_cache_mb(ctx_size, layers, kv_heads, head_dim, cache_type_k, parallel, kv_unified, cache_idle_slots)
+        kv_vram_mb = estimate_kv_cache_mb(ctx_size, kv_layers, kv_heads, head_dim, cache_type_k, parallel, kv_unified, cache_idle_slots)
 
     # 4. Vision (mmproj) + CUDA overhead
-    vision_vram = 800 if conf.get("MMPRJ_PATH") else 0
+    mmprj_offload = conf.get("MMPRJ_OFFLOAD", "true").lower() != "false"
+    vision_vram = 800 if (conf.get("MMPRJ_PATH") and mmprj_offload) else 0
     overhead = 200  # base overhead (server, HTTP, etc.)
 
     # CUDA overhead applies to KV/workspace buffers, NOT model weights
