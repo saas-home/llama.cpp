@@ -66,22 +66,27 @@ def parse_bash_conf(file_path):
         return {}
 
 
-def estimate_kv_cache_mb(ctx_size, layers, kv_heads, head_dim, cache_type_k, parallel, kv_unified, cache_idle_slots):
+def get_kv_precision(cache_type):
+    c = str(cache_type).lower()
+    if "f16" in c:
+        return 2.0
+    if "q4_0" in c:
+        return 0.5
+    if "q6_k" in c:
+        return 0.75
+    return 1.0  # q8_0 default
+
+
+def estimate_kv_cache_mb(ctx_size, layers, kv_heads, head_dim, cache_type_k, cache_type_v, parallel, kv_unified, cache_idle_slots):
     """Estimate KV cache VRAM in MB.
 
     llama.cpp does NOT pre-allocate full KV for all parallel slots.
     With kv-unified + cache-idle-slots, idle slots are offloaded to RAM,
     so only the active slot(s) consume VRAM at any given time.
     """
-    precision = 1.0  # q8_0 default
-    if "f16" in cache_type_k:
-        precision = 2.0
-    elif "q4_0" in cache_type_k:
-        precision = 0.5
-    elif "q6_k" in cache_type_k:
-        precision = 0.75
-
-    kv_per_token_bytes = 2 * layers * kv_heads * head_dim * precision
+    prec_k = get_kv_precision(cache_type_k)
+    prec_v = get_kv_precision(cache_type_v)
+    kv_per_token_bytes = layers * kv_heads * head_dim * (prec_k + prec_v)
     total_kv_bytes = ctx_size * kv_per_token_bytes
 
     # With kv-unified + cache-idle-slots: only 1 slot active in VRAM at a time
@@ -154,6 +159,7 @@ def estimate_vram(conf, gpu_vram_mb):
     # 3. KV cache VRAM (accounts for parallel slots + idle-slot offload + CPU offload)
     ctx_size = int(conf.get("CTX_SIZE", 131072))
     cache_type_k = conf.get("CACHE_TYPE_K", "q8_0")
+    cache_type_v = conf.get("CACHE_TYPE_V", cache_type_k)
     parallel = int(conf.get("PARALLEL", 1))
     kv_unified = conf.get("KV_UNIFIED", "false")
     cache_idle_slots = conf.get("CACHE_IDLE_SLOTS", "false")
@@ -161,7 +167,7 @@ def estimate_vram(conf, gpu_vram_mb):
     if kv_offload == "false":
         kv_vram_mb = 0.0
     else:
-        kv_vram_mb = estimate_kv_cache_mb(ctx_size, kv_layers, kv_heads, head_dim, cache_type_k, parallel, kv_unified, cache_idle_slots)
+        kv_vram_mb = estimate_kv_cache_mb(ctx_size, kv_layers, kv_heads, head_dim, cache_type_k, cache_type_v, parallel, kv_unified, cache_idle_slots)
 
     # 4. Vision (mmproj) + CUDA overhead
     mmprj_offload = conf.get("MMPRJ_OFFLOAD", "true").lower() != "false"
