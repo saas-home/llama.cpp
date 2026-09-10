@@ -234,6 +234,8 @@ if [[ "$DEPLOY" == true ]]; then
     [[ -d "$LLAMA_DIR/build/tools/ui/dist" ]] && CMD+=("--path" "$LLAMA_DIR/build/tools/ui/dist")
     [[ -n "$MMPRJ_PATH" && -f "$MMPRJ_PATH" ]] && CMD+=("--mmproj" "$MMPRJ_PATH")
     [[ "$MMPRJ_OFFLOAD" == "false" ]] && CMD+=("--no-mmproj-offload")
+    [[ -n "${IMAGE_MAX_TOKENS:-}" ]] && CMD+=("--image-max-tokens" "$IMAGE_MAX_TOKENS")
+    [[ -n "${IMAGE_MIN_TOKENS:-}" ]] && CMD+=("--image-min-tokens" "$IMAGE_MIN_TOKENS")
     CMD+=("--n-gpu-layers" "$N_GPU_LAYERS")
     [[ -n "${N_CPU_MOE:-}" && "$N_CPU_MOE" -gt 0 ]] && CMD+=("--n-cpu-moe" "$N_CPU_MOE")
     CMD+=("--cache-type-k" "$CACHE_TYPE_K")
