@@ -2,11 +2,13 @@
 set -euo pipefail
 
 # ====================== USAGE ==============================
-# ./rebuild-llama.sh                      → use script defaults
-# ./rebuild-llama.sh [config]             → override with specific .conf
-# ./rebuild-llama.sh [config] --build     → build from source
-# ./rebuild-llama.sh [config] --bench     → run benchmark
-# ./rebuild-llama.sh [config] --no-deploy   → stop and build, but do not deploy/restart
+# ./rebuild-llama.sh                      -> use script defaults
+# ./rebuild-llama.sh [config]             -> override with specific .conf
+# ./rebuild-llama.sh [config] --build     -> build from source
+# ./rebuild-llama.sh [config] --bench     -> run benchmark
+# ./rebuild-llama.sh [config] --no-deploy -> stop and build, but do not deploy/restart
+# ./rebuild-llama.sh [config] --stop      -> stop and disable the configuration service
+# ./rebuild-llama.sh --stop               -> stop all running llama-server instances
 # ============================================================
 
 BUILD=false
@@ -16,7 +18,94 @@ BENCH_COUNT=1
 BENCH_PARALLEL=1
 BENCH_BUDGET=500
 DEPLOY=true
+STOP=false
 CONFIG_OVERRIDE=""
+EXPLICIT_SERVICE=""
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SERVICE_NAME_DEFAULT="llama-server.service"
+SERVICE_NAME="${SERVICE_NAME:-$SERVICE_NAME_DEFAULT}"
+
+# Parse arguments and check for overrides
+for arg in "$@"; do
+    case "$arg" in
+        --build) BUILD=true ;;
+        --bench) BENCH=true ;;
+        --bench-only) BENCH_ONLY=true; BENCH=true ;;
+        --bench-count=*) BENCH_COUNT="${arg#*=}" ;;
+        --bench-parallel=*) BENCH_PARALLEL="${arg#*=}" ;;
+        --bench-budget=*) BENCH_BUDGET="${arg#*=}" ;;
+        --no-deploy) DEPLOY=false ;;
+        --stop|--disable|--stop-service|--stop-disable|--down) STOP=true ;;
+        --service=*) SERVICE_NAME="${arg#*=}"; EXPLICIT_SERVICE="${arg#*=}" ;;
+        *.conf) CONFIG_OVERRIDE="$arg" ;;
+    esac
+done
+
+if [[ "$STOP" == true ]]; then
+    if [[ -n "$CONFIG_OVERRIDE" ]]; then
+        if [[ -f "$CONFIG_OVERRIDE" ]]; then
+            RESOLVED_CONF="$CONFIG_OVERRIDE"
+        elif [[ -f "$SCRIPT_DIR/$CONFIG_OVERRIDE" ]]; then
+            RESOLVED_CONF="$SCRIPT_DIR/$CONFIG_OVERRIDE"
+        else
+            echo "❌ Override config file not found: $CONFIG_OVERRIDE"
+            exit 1
+        fi
+        echo "📂 Resolving service from: $RESOLVED_CONF"
+        source "$RESOLVED_CONF"
+        TARGET_SERVICE="${EXPLICIT_SERVICE:-$SERVICE_NAME}"
+        echo "🛑 Stopping and disabling service: $TARGET_SERVICE"
+        sudo systemctl stop "$TARGET_SERVICE" || true
+        sudo systemctl disable "$TARGET_SERVICE" || true
+        sudo systemctl daemon-reload
+        echo "✅ Service $TARGET_SERVICE stopped and disabled."
+    elif [[ -n "$EXPLICIT_SERVICE" ]]; then
+        echo "🛑 Stopping and disabling service: $EXPLICIT_SERVICE"
+        sudo systemctl stop "$EXPLICIT_SERVICE" || true
+        sudo systemctl disable "$EXPLICIT_SERVICE" || true
+        sudo systemctl daemon-reload
+        echo "✅ Service $EXPLICIT_SERVICE stopped and disabled."
+    else
+        echo "🛑 No config specified. Stopping all running llama-server instances..."
+        ACTIVE_SERVICES=$(systemctl list-units 'llama*' --no-legend --state=active 2>/dev/null | awk '{print $1}' || true)
+        RUNNING_PIDS=$(pgrep -x "llama-server" 2>/dev/null || true)
+        for pid in $RUNNING_PIDS; do
+            unit=$(ps -o unit= -p "$pid" 2>/dev/null | tr -d ' ' || true)
+            if [[ -n "$unit" && "$unit" != "-" && "$unit" != "init.scope" && "$unit" != user@*.service && "$unit" == *.service ]]; then
+                ACTIVE_SERVICES=$(printf "%s\n%s" "$ACTIVE_SERVICES" "$unit")
+            fi
+        done
+        SERVICES_TO_STOP=$(echo "$ACTIVE_SERVICES" | sed '/^$/d' | sort -u)
+        if [[ -n "$SERVICES_TO_STOP" ]]; then
+            for unit in $SERVICES_TO_STOP; do
+                echo "🛑 Stopping service: $unit"
+                sudo systemctl stop "$unit" || true
+                echo "🔌 Disabling service: $unit"
+                sudo systemctl disable "$unit" || true
+            done
+        fi
+        if pgrep -x "llama-server" >/dev/null 2>&1; then
+            echo "🛑 Terminating remaining llama-server process(es)..."
+            sudo pkill -x "llama-server" || true
+            sleep 1
+            if pgrep -x "llama-server" >/dev/null 2>&1; then
+                echo "⚠️  Force-killing remaining llama-server process(es)..."
+                sudo pkill -9 -x "llama-server" || true
+            fi
+        fi
+        ENABLED_SERVICES=$(systemctl list-unit-files 'llama*' --no-legend 2>/dev/null | awk '$2 == "enabled" {print $1}' || true)
+        if [[ -n "$ENABLED_SERVICES" ]]; then
+            for unit in $ENABLED_SERVICES; do
+                echo "🔌 Disabling enabled service: $unit"
+                sudo systemctl disable "$unit" || true
+            done
+        fi
+        sudo systemctl daemon-reload
+        echo "✅ All running llama-server instances stopped and disabled."
+    fi
+    exit 0
+fi
 
 # --- Default Current Configuration (Mythos-26B-A4B-PRISM Optimized) ---
 # Optimized for: AMD 7950X3D | RTX 4070 Ti Super (16GB) | Ubuntu 26.04
@@ -115,26 +204,6 @@ MLOCK="${MLOCK:-false}"
 MMAP="${MMAP:-true}"
 MMPRJ_OFFLOAD="${MMPRJ_OFFLOAD:-true}"
 
-# 1. Environment & Base Paths
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SERVICE_NAME_DEFAULT="llama-server.service"
-SERVICE_NAME="${SERVICE_NAME:-$SERVICE_NAME_DEFAULT}"
-
-# 2. Parse arguments and check for overrides
-for arg in "$@"; do
-    case "$arg" in
-        --build) BUILD=true ;;
-        --bench) BENCH=true ;;
-        --bench-only) BENCH_ONLY=true; BENCH=true ;;
-        --bench-count=*) BENCH_COUNT="${arg#*=}" ;;
-        --bench-parallel=*) BENCH_PARALLEL="${arg#*=}" ;;
-        --bench-budget=*) BENCH_BUDGET="${arg#*=}" ;;
-        --no-deploy) DEPLOY=false ;;
-        --service=*) SERVICE_NAME="${arg#*=}" ;;
-        *.conf) CONFIG_OVERRIDE="$arg" ;;
-    esac
-done
-
 # Default to qwen-3.8-27b-gsq.conf if no config specified and it exists
 if [[ -z "$CONFIG_OVERRIDE" && -f "$SCRIPT_DIR/qwen-3.8-27b-gsq.conf" ]]; then
     CONFIG_OVERRIDE="$SCRIPT_DIR/qwen-3.8-27b-gsq.conf"
@@ -152,6 +221,7 @@ if [[ -n "$CONFIG_OVERRIDE" ]]; then
     echo "📂 Overriding defaults with: $RESOLVED_CONF"
     CONFIG_OVERRIDE="$RESOLVED_CONF"
     source "$CONFIG_OVERRIDE"
+    [[ -n "$EXPLICIT_SERVICE" ]] && SERVICE_NAME="$EXPLICIT_SERVICE"
     # --- VRAM Pre-flight Check ---
     if [[ -f "$SCRIPT_DIR/vram-linter.py" ]]; then
         python3 "$SCRIPT_DIR/vram-linter.py" "$CONFIG_OVERRIDE" || true
@@ -240,8 +310,13 @@ if [[ "$DEPLOY" == true ]]; then
     [[ -n "${N_CPU_MOE:-}" && "$N_CPU_MOE" -gt 0 ]] && CMD+=("--n-cpu-moe" "$N_CPU_MOE")
     CMD+=("--cache-type-k" "$CACHE_TYPE_K")
     CMD+=("--cache-type-v" "$CACHE_TYPE_V")
-    [[ "$MLOCK" == "true" ]] && CMD+=("--load-mode" "mlock")
-    [[ "$MMAP" == "false" && "$MLOCK" != "true" ]] && CMD+=("--load-mode" "none")
+    if [[ "$MLOCK" == "true" && "$MMAP" == "true" ]]; then
+        CMD+=("--load-mode" "mmap+mlock")
+    elif [[ "$MLOCK" == "true" ]]; then
+        CMD+=("--load-mode" "mlock")
+    elif [[ "$MMAP" == "false" ]]; then
+        CMD+=("--load-mode" "none")
+    fi
     CMD+=("--parallel" "$PARALLEL")
     CMD+=("--cache-ram" "$CACHE_RAM")
     [[ -n "$CACHE_REUSE" ]] && CMD+=("--cache-reuse" "$CACHE_REUSE")
