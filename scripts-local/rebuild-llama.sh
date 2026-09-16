@@ -279,7 +279,7 @@ if [[ "$BUILD" == true ]]; then
       -DGGML_AVX512_BF16=ON \
       -DGGML_CUDA=ON \
       -DGGML_CUDA_FA=ON \
-      -DGGML_CUDA_FA_ALL_QUANTS=ON \
+      -DGGML_CUDA_FA_QUANTS=all \
       -DGGML_CUDA_GRAPHS=ON \
       -DGGML_CUDA_NO_PEER_COPY=OFF \
       -DGGML_CUDA_COMPRESSION_MODE=speed \

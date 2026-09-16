@@ -167,7 +167,7 @@ Benchmark scripts in `scripts-local/`: `bench-llama.py`, `bench-multi.py`, `save
 ### CUDA backend (RTX 4070 Ti Super, Ada Lovelace, AD107, 16GB)
 
 - Build flag `-DCMAKE_CUDA_ARCHITECTURES="89"` is correct for Ada.
-- CachyOS script enables `GGML_CUDA_FA=ON`, `GGML_CUDA_FA_ALL_QUANTS=ON`, `GGML_CUDA_GRAPHS=ON`, `GGML_CUDA_COMPRESSION_MODE=speed`.
+- CachyOS script enables `GGML_CUDA_FA=ON`, `GGML_CUDA_FA_QUANTS=all`, `GGML_CUDA_GRAPHS=ON`, `GGML_CUDA_COMPRESSION_MODE=speed`.
 - `CUDA_VISIBLE_DEVICES` is not set — works fine for single-GPU; set it if a second GPU is added.
 - **Upstream fixes in your 17 new commits:** Gemma E4B MTP FlashAttention fix (#25148), `get_rows_back` grid-y clamp for >65535 rows (#25103), KQ mask overflow prevention (#24945), split compute sync revert (#25138).
 - Server uses `PARALLEL=4` logical slots sharing the GPU via batched inference (no multi-GPU). `--prio 2` (high) + CachyOS BORE scheduler — redundant but harmless.

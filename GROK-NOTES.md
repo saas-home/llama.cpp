@@ -359,7 +359,7 @@ VRAM validation tool. Reads `.conf` file and estimates GPU memory usage.
 - Build flag: `-DCMAKE_CUDA_ARCHITECTURES="89"` (correct for Ada)
 - CachyOS script enables:
   - `GGML_CUDA_FA=ON` — FlashAttention
-  - `GGML_CUDA_FA_ALL_QUANTS=ON` — All quant variants
+  - `GGML_CUDA_FA_QUANTS=all` — All quant variants
   - `GGML_CUDA_GRAPHS=ON` — CUDA graphs
   - `GGML_CUDA_COMPRESSION_MODE=speed`
 - `CUDA_VISIBLE_DEVICES` not set — works for single-GPU
