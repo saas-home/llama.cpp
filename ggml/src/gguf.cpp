@@ -792,13 +792,14 @@ static struct gguf_context * gguf_init_from_reader(const struct gguf_reader & gr
         ctx->size = 0;
         for (size_t i = 0; i < ctx->info.size(); ++i) {
             const gguf_tensor_info & ti = ctx->info[i];
-            if (ti.offset != ctx->size) {
-                GGML_LOG_ERROR("%s: tensor '%s' has offset %" PRIu64 ", expected %zu\n",
-                    __func__, ti.t.name, ti.offset, ctx->size);
+            if (ti.offset < ctx->size || ti.offset % ctx->alignment != 0) {
+                GGML_LOG_ERROR("%s: tensor '%s' has offset %" PRIu64 ", expected at least %zu (alignment %zu)\n",
+                    __func__, ti.t.name, ti.offset, ctx->size, ctx->alignment);
                 GGML_LOG_ERROR("%s: failed to read tensor data\n", __func__);
                 gguf_free(ctx);
                 return nullptr;
             }
+            ctx->size = ti.offset;
             const size_t nbytes = ggml_nbytes(&ti.t);
             // GGML_PAD adds (alignment - 1) to nbytes. when nbytes is near
             // SIZE_MAX this wraps to 0 and makes the check below dead.
